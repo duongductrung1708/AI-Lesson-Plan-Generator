@@ -415,7 +415,7 @@ const AdminDashboard = () => {
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar
-              src={hanaiLogo}
+              src={hanaiLogo as string}
               alt="HANAi"
               sx={{
                 width: 40,
@@ -436,7 +436,7 @@ const AdminDashboard = () => {
           </Box>
           <Box sx={{ height: 32, display: "flex", alignItems: "center" }}>
             <img
-              src={brandNameLogo}
+              src={brandNameLogo as string}
               alt="Brand Name"
               style={{ height: "100%", objectFit: "contain", display: "block" }}
             />
@@ -951,7 +951,7 @@ const AdminDashboard = () => {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Avatar
-              src={hanaiLogo}
+              src={hanaiLogo as string}
               alt="HANAi"
               sx={{
                 width: 32,

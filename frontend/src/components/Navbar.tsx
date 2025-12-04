@@ -203,7 +203,7 @@ ${bugForm.description.trim()}`;
             sx={{ mr: 1, boxShadow: 2, borderRadius: 2, overflow: "hidden" }}
           >
             <img
-              src={hanaiLogo}
+              src={hanaiLogo as string}
               alt="HANAi Logo"
               style={{
                 width: 40,
@@ -221,7 +221,7 @@ ${bugForm.description.trim()}`;
             }}
           >
             <img
-              src={brandNameLogo}
+              src={brandNameLogo as string}
               alt="Brand Name"
               style={{
                 height: "100%",
