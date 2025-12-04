@@ -53,8 +53,8 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-const hanaiLogo = "/src/assets/logo/hanai_logo.png";
-const brandNameLogo = "/src/assets/logo/brand_name.png";
+import hanaiLogo from "../../assets/logo/hanai_logo.png";
+import brandNameLogo from "../../assets/logo/brand_name.png";
 
 const drawerWidth = 220;
 

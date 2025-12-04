@@ -40,8 +40,8 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-const hanaiLogo = "/src/assets/logo/hanai_logo.png";
-const brandNameLogo = "/src/assets/logo/brand_name.png";
+import hanaiLogo from "../assets/logo/hanai_logo.png";
+import brandNameLogo from "../assets/logo/brand_name.png";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
