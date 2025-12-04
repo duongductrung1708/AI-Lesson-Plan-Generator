@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Container,
   Card,
@@ -12,36 +12,35 @@ import {
   CircularProgress,
   Divider,
   Alert,
-} from '@mui/material';
-import { PersonAdd as PersonAddIcon, Google } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
-import PasswordInput from '../components/PasswordInput';
+} from "@mui/material";
+import { PersonAdd as PersonAddIcon, Google } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const validatePassword = (password: string): string | null => {
     if (password.length < 6) {
-      return 'Mật khẩu phải có ít nhất 6 ký tự';
+      return "Mật khẩu phải có ít nhất 6 ký tự";
     }
     if (!/[A-Z]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất một chữ cái viết hoa';
+      return "Mật khẩu phải có ít nhất một chữ cái viết hoa";
     }
     if (!/[a-z]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất một chữ cái thường';
+      return "Mật khẩu phải có ít nhất một chữ cái thường";
     }
     if (!/[0-9]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất một số';
+      return "Mật khẩu phải có ít nhất một số";
     }
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      return 'Mật khẩu phải có ít nhất một ký tự đặc biệt (!@#$%^&*...)';
+      return "Mật khẩu phải có ít nhất một ký tự đặc biệt (!@#$%^&*...)";
     }
     return null;
   };
@@ -54,13 +53,13 @@ const Register = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!name.trim()) {
-      newErrors.name = 'Vui lòng nhập tên của bạn';
+      newErrors.name = "Vui lòng nhập tên của bạn";
     }
 
     if (!email.trim()) {
-      newErrors.email = 'Vui lòng nhập email';
+      newErrors.email = "Vui lòng nhập email";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Email không hợp lệ';
+      newErrors.email = "Email không hợp lệ";
     }
 
     const passwordError = validatePassword(password);
@@ -69,9 +68,9 @@ const Register = () => {
     }
 
     if (!confirmPassword) {
-      newErrors.confirmPassword = 'Vui lòng nhập lại mật khẩu';
+      newErrors.confirmPassword = "Vui lòng nhập lại mật khẩu";
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu không khớp';
+      newErrors.confirmPassword = "Mật khẩu không khớp";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -84,16 +83,16 @@ const Register = () => {
       await register(name, email, password);
       // Show success message about activation email
       setErrors({
-        general: 'success',
+        general: "success",
       });
       // Don't navigate immediately - show message about checking email
     } catch (error: any) {
       if (error.response?.data?.errors) {
         const serverErrors: { [key: string]: string } = {};
         error.response.data.errors.forEach((err: any) => {
-          if (err.param === 'email') {
-            serverErrors.email = 'Email đã được sử dụng';
-          } else if (err.param === 'password') {
+          if (err.param === "email") {
+            serverErrors.email = "Email đã được sử dụng";
+          } else if (err.param === "password") {
             serverErrors.password = err.msg;
           }
         });
@@ -113,21 +112,26 @@ const Register = () => {
           <Box textAlign="center" mb={4}>
             <Box
               sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
                 width: 64,
                 height: 64,
                 borderRadius: 2,
-                background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)',
+                background: "linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)",
                 mb: 2,
                 boxShadow: 3,
               }}
               className="animate-scale-in"
             >
-              <PersonAddIcon sx={{ fontSize: 32, color: 'white' }} />
+              <PersonAddIcon sx={{ fontSize: 32, color: "white" }} />
             </Box>
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+            <Typography
+              variant="h4"
+              component="h1"
+              fontWeight="bold"
+              gutterBottom
+            >
               Tạo tài khoản
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -135,19 +139,20 @@ const Register = () => {
             </Typography>
           </Box>
 
-          {errors.general && errors.general === 'success' && (
+          {errors.general && errors.general === "success" && (
             <Alert severity="success" sx={{ mb: 3 }}>
-              Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản của bạn.
+              Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản
+              của bạn.
             </Alert>
           )}
-          {errors.general && errors.general !== 'success' && (
+          {errors.general && errors.general !== "success" && (
             <Alert severity="error" sx={{ mb: 3 }}>
               {errors.general}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <TextField
                 fullWidth
                 label="Tên của bạn"
@@ -156,7 +161,7 @@ const Register = () => {
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
-                  if (errors.name) setErrors({ ...errors, name: '' });
+                  if (errors.name) setErrors({ ...errors, name: "" });
                 }}
                 placeholder="Nhập tên của bạn"
                 variant="outlined"
@@ -173,7 +178,7 @@ const Register = () => {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: '' });
+                  if (errors.email) setErrors({ ...errors, email: "" });
                 }}
                 placeholder="your.email@example.com"
                 variant="outlined"
@@ -187,7 +192,7 @@ const Register = () => {
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: '' });
+                  if (errors.password) setErrors({ ...errors, password: "" });
                 }}
                 required
                 placeholder="Nhập mật khẩu mạnh"
@@ -202,7 +207,8 @@ const Register = () => {
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
-                  if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' });
+                  if (errors.confirmPassword)
+                    setErrors({ ...errors, confirmPassword: "" });
                 }}
                 required
                 placeholder="Nhập lại mật khẩu"
@@ -220,11 +226,13 @@ const Register = () => {
                 disabled={loading}
                 sx={{
                   py: 1.5,
-                  fontSize: '1rem',
+                  fontSize: "1rem",
                   fontWeight: 600,
-                  background: 'linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #4f46e5 30%, #7c3aed 90%)',
+                  background:
+                    "linear-gradient(45deg, #6366f1 30%, #8b5cf6 90%)",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(45deg, #4f46e5 30%, #7c3aed 90%)",
                   },
                   mt: 2,
                 }}
@@ -232,7 +240,7 @@ const Register = () => {
                 {loading ? (
                   <CircularProgress size={24} color="inherit" />
                 ) : (
-                  'Đăng ký'
+                  "Đăng ký"
                 )}
               </Button>
             </Box>
@@ -250,15 +258,15 @@ const Register = () => {
             fullWidth
             startIcon={<Google />}
             onClick={() => {
-              window.location.href = '/api/auth/google';
+              window.location.href = "/api/auth/google";
             }}
             sx={{
               py: 1.5,
-              borderColor: '#db4437',
-              color: '#db4437',
-              '&:hover': {
-                borderColor: '#c23321',
-                backgroundColor: 'rgba(219, 68, 55, 0.04)',
+              borderColor: "#db4437",
+              color: "#db4437",
+              "&:hover": {
+                borderColor: "#c23321",
+                backgroundColor: "rgba(219, 68, 55, 0.04)",
               },
             }}
           >
@@ -267,16 +275,16 @@ const Register = () => {
 
           <Box textAlign="center">
             <Typography variant="body2" color="text.secondary">
-              Đã có tài khoản?{' '}
+              Đã có tài khoản?{" "}
               <MuiLink
                 component={Link}
                 to="/login"
                 sx={{
                   fontWeight: 600,
-                  color: 'primary.main',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
+                  color: "primary.main",
+                  textDecoration: "none",
+                  "&:hover": {
+                    textDecoration: "underline",
                   },
                 }}
               >

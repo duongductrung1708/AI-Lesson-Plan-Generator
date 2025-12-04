@@ -117,3 +117,125 @@ export const sendActivationEmail = async (
   }
 };
 
+export const sendOTPEmail = async (
+  email: string,
+  name: string,
+  otpCode: string
+): Promise<void> => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: `"AI Lesson Plan Generator" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: 'Mã OTP đặt lại mật khẩu - AI Lesson Plan Generator',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background: linear-gradient(45deg, #2563eb 30%, #6366f1 90%);
+              color: white;
+              padding: 30px;
+              text-align: center;
+              border-radius: 10px 10px 0 0;
+            }
+            .content {
+              background: #f9fafb;
+              padding: 30px;
+              border-radius: 0 0 10px 10px;
+            }
+            .otp-box {
+              background: white;
+              border: 2px dashed #2563eb;
+              border-radius: 10px;
+              padding: 20px;
+              text-align: center;
+              margin: 20px 0;
+            }
+            .otp-code {
+              font-size: 32px;
+              font-weight: bold;
+              color: #2563eb;
+              letter-spacing: 8px;
+              font-family: 'Courier New', monospace;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              color: #6b7280;
+              font-size: 12px;
+            }
+            .warning {
+              background: #fef3c7;
+              border-left: 4px solid #f59e0b;
+              padding: 12px;
+              margin: 20px 0;
+              border-radius: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Đặt Lại Mật Khẩu</h1>
+            </div>
+            <div class="content">
+              <h2>Xin chào ${name}!</h2>
+              <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình.</p>
+              <p>Mã OTP của bạn là:</p>
+              <div class="otp-box">
+                <div class="otp-code">${otpCode}</div>
+              </div>
+              <div class="warning">
+                <p><strong>⚠️ Lưu ý quan trọng:</strong></p>
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li>Mã OTP này chỉ có hiệu lực trong <strong>10 phút</strong></li>
+                  <li>Không chia sẻ mã này với bất kỳ ai</li>
+                  <li>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này</li>
+                </ul>
+              </div>
+              <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này và đảm bảo tài khoản của bạn được bảo mật.</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} AI Lesson Plan Generator. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+      Xin chào ${name}!
+      
+      Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình.
+      
+      Mã OTP của bạn là: ${otpCode}
+      
+      Lưu ý:
+      - Mã OTP này chỉ có hiệu lực trong 10 phút
+      - Không chia sẻ mã này với bất kỳ ai
+      - Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này
+      
+      © ${new Date().getFullYear()} AI Lesson Plan Generator
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw new Error('Không thể gửi email OTP');
+  }
+};
+

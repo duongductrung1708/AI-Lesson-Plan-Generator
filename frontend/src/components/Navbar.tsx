@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -18,6 +18,11 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -27,8 +32,14 @@ import {
   Logout as LogoutIcon,
   Person as PersonIcon,
   CreditCard as CreditCardIcon,
+  HelpOutline as HelpOutlineIcon,
+  Gavel as GavelIcon,
+  BugReport as BugReportIcon,
+  KeyboardAlt as KeyboardAltIcon,
+  AutoStories as AutoStoriesIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
+import toast from "react-hot-toast";
 const hanaiLogo = "/src/assets/logo/hanai_logo.png";
 const brandNameLogo = "/src/assets/logo/brand_name.png";
 
@@ -40,6 +51,112 @@ const Navbar = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [helpAnchorEl, setHelpAnchorEl] = useState<null | HTMLElement>(null);
+  const [reportBugOpen, setReportBugOpen] = useState(false);
+  const [bugForm, setBugForm] = useState({
+    title: "",
+    email: user?.email || "",
+    description: "",
+  });
+  const [bugErrors, setBugErrors] = useState<{
+    title?: string;
+    email?: string;
+    description?: string;
+  }>({});
+
+  const handleGoAdmin = () => {
+    if (!user?.isAdmin) {
+      toast.error("Bạn không có quyền truy cập trang quản trị.");
+      return;
+    }
+    navigate("/admin");
+  };
+
+  useEffect(() => {
+    setBugForm((prev) => ({
+      ...prev,
+      email: user?.email || "",
+    }));
+  }, [user?.email]);
+  const handleHelpOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setHelpAnchorEl(event.currentTarget);
+  };
+
+  const handleHelpClose = () => {
+    setHelpAnchorEl(null);
+  };
+
+  const handleReportBugOpen = () => {
+    setBugErrors({});
+    setBugForm({
+      title: "",
+      email: user?.email || "",
+      description: "",
+    });
+    setReportBugOpen(true);
+  };
+
+  const handleReportBugClose = () => {
+    setReportBugOpen(false);
+  };
+
+  const handleReportBugSubmit = () => {
+    const errors: typeof bugErrors = {};
+    if (!bugForm.title.trim()) {
+      errors.title = "Vui lòng nhập tiêu đề lỗi";
+    }
+    const emailValue = bugForm.email.trim();
+    if (!emailValue) {
+      errors.email = "Vui lòng nhập email liên hệ";
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(emailValue)) {
+      errors.email = "Email không hợp lệ";
+    }
+    if (!bugForm.description.trim()) {
+      errors.description = "Vui lòng mô tả lỗi bạn gặp";
+    }
+
+    if (Object.keys(errors).length) {
+      setBugErrors(errors);
+      return;
+    }
+
+    const body = `Tên: ${user?.name || "Không cung cấp"}
+Email: ${emailValue}
+
+Mô tả lỗi:
+${bugForm.description.trim()}`;
+
+    const mailtoLink = `mailto:support@hanai.vn?subject=${encodeURIComponent(
+      `Bug Report - ${bugForm.title.trim()}`
+    )}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailtoLink;
+    toast.success("Đang mở email để bạn gửi báo lỗi.");
+    setReportBugOpen(false);
+  };
+
+  const helpLinks = [
+    {
+      label: "Help center",
+      icon: <HelpOutlineIcon sx={{ mr: 2, fontSize: 20 }} />,
+      to: "/help-center",
+    },
+    {
+      label: "Release notes",
+      icon: <AutoStoriesIcon sx={{ mr: 2, fontSize: 20 }} />,
+      to: "/release-notes",
+    },
+    {
+      label: "Terms & policies",
+      icon: <GavelIcon sx={{ mr: 2, fontSize: 20 }} />,
+      to: "/terms-policies",
+    },
+    {
+      label: "Keyboard shortcuts",
+      icon: <KeyboardAltIcon sx={{ mr: 2, fontSize: 20 }} />,
+      to: "/keyboard-shortcuts",
+    },
+  ];
 
   // Check if a path is active
   const isActive = (path: string) => location.pathname === path;
@@ -82,7 +199,9 @@ const Navbar = () => {
             color: "inherit",
           }}
         >
-          <Box sx={{ mr: 1, boxShadow: 2, borderRadius: 2, overflow: "hidden" }}>
+          <Box
+            sx={{ mr: 1, boxShadow: 2, borderRadius: 2, overflow: "hidden" }}
+          >
             <img
               src={hanaiLogo}
               alt="HANAi Logo"
@@ -159,6 +278,21 @@ const Navbar = () => {
                 >
                   Tài Liệu
                 </Button>
+                <Button
+                  onClick={handleHelpOpen}
+                  startIcon={<HelpOutlineIcon />}
+                  sx={{
+                    color: "text.primary",
+                    borderBottom: "none",
+                    fontWeight: "normal",
+                    "&:hover": {
+                      borderBottom: "2px solid",
+                      borderColor: "primary.main",
+                    },
+                  }}
+                >
+                  Help
+                </Button>
                 <Box
                   sx={{
                     ml: 2,
@@ -213,6 +347,13 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                <Button
+                  onClick={handleHelpOpen}
+                  startIcon={<HelpOutlineIcon />}
+                  sx={{ color: "text.primary" }}
+                >
+                  Help
+                </Button>
                 <Button
                   component={Link}
                   to="/login"
@@ -319,6 +460,60 @@ const Navbar = () => {
           </MenuItem>
         </Menu>
 
+        <Menu
+          anchorEl={helpAnchorEl}
+          open={Boolean(helpAnchorEl)}
+          onClose={handleHelpClose}
+          transformOrigin={{ horizontal: "right", vertical: "top" }}
+          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          PaperProps={{
+            sx: {
+              mt: 1.5,
+              minWidth: 240,
+              boxShadow: 3,
+            },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+            <Typography variant="overline" color="text.secondary">
+              Help
+            </Typography>
+          </Box>
+          {helpLinks.map((item) => (
+            <MenuItem
+              key={item.label}
+              component={Link}
+              to={item.to}
+              onClick={handleHelpClose}
+              sx={{
+                py: 1.5,
+                "&:hover": {
+                  bgcolor: "action.hover",
+                },
+              }}
+            >
+              {item.icon}
+              <Typography variant="body2">{item.label}</Typography>
+            </MenuItem>
+          ))}
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem
+            onClick={() => {
+              handleHelpClose();
+              handleReportBugOpen();
+            }}
+            sx={{
+              py: 1.5,
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+            }}
+          >
+            <BugReportIcon sx={{ mr: 2, fontSize: 20 }} />
+            <Typography variant="body2">Report Bug</Typography>
+          </MenuItem>
+        </Menu>
+
         <Drawer
           anchor="right"
           open={mobileMenuOpen}
@@ -366,6 +561,18 @@ const Navbar = () => {
                   </Box>
                 </Box>
                 <List>
+                  {user.isAdmin && (
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        onClick={() => {
+                          handleGoAdmin();
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <ListItemText primary="Admin Dashboard" />
+                      </ListItemButton>
+                    </ListItem>
+                  )}
                   <ListItem disablePadding>
                     <ListItemButton
                       component={Link}
@@ -464,6 +671,35 @@ const Navbar = () => {
                     </ListItemButton>
                   </ListItem>
                 </List>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ px: 2, pb: 1 }}>
+                  <Typography variant="overline" color="text.secondary">
+                    Help
+                  </Typography>
+                </Box>
+                <List>
+                  {helpLinks.map((item) => (
+                    <ListItem disablePadding key={item.label}>
+                      <ListItemButton
+                        component={Link}
+                        to={item.to}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <ListItemText primary={item.label} />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleReportBugOpen();
+                      }}
+                    >
+                      <ListItemText primary="Report Bug" />
+                    </ListItemButton>
+                  </ListItem>
+                </List>
               </>
             ) : (
               <List>
@@ -485,10 +721,101 @@ const Navbar = () => {
                     <ListItemText primary="Đăng ký" />
                   </ListItemButton>
                 </ListItem>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ px: 2, pb: 1 }}>
+                  <Typography variant="overline" color="text.secondary">
+                    Help
+                  </Typography>
+                </Box>
+                {helpLinks.map((item) => (
+                  <ListItem disablePadding key={item.label}>
+                    <ListItemButton
+                      component={Link}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <ListItemText primary={item.label} />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleReportBugOpen();
+                    }}
+                  >
+                    <ListItemText primary="Report Bug" />
+                  </ListItemButton>
+                </ListItem>
               </List>
             )}
           </Box>
         </Drawer>
+        <Dialog
+          open={reportBugOpen}
+          onClose={handleReportBugClose}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>Báo cáo lỗi</DialogTitle>
+          <DialogContent
+            sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              Vui lòng mô tả chi tiết sự cố. Chúng tôi sẽ phản hồi qua email của
+              bạn.
+            </Typography>
+            <TextField
+              label="Tiêu đề"
+              value={bugForm.title}
+              onChange={(e) => {
+                setBugForm({ ...bugForm, title: e.target.value });
+                if (bugErrors.title) {
+                  setBugErrors((prev) => ({ ...prev, title: undefined }));
+                }
+              }}
+              error={!!bugErrors.title}
+              helperText={bugErrors.title}
+              fullWidth
+            />
+            <TextField
+              label="Email liên hệ"
+              type="email"
+              value={bugForm.email}
+              onChange={(e) => {
+                setBugForm({ ...bugForm, email: e.target.value });
+                if (bugErrors.email) {
+                  setBugErrors((prev) => ({ ...prev, email: undefined }));
+                }
+              }}
+              error={!!bugErrors.email}
+              helperText={bugErrors.email}
+              fullWidth
+            />
+            <TextField
+              label="Mô tả lỗi"
+              value={bugForm.description}
+              onChange={(e) => {
+                setBugForm({ ...bugForm, description: e.target.value });
+                if (bugErrors.description) {
+                  setBugErrors((prev) => ({ ...prev, description: undefined }));
+                }
+              }}
+              error={!!bugErrors.description}
+              helperText={bugErrors.description}
+              fullWidth
+              multiline
+              minRows={4}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleReportBugClose}>Hủy</Button>
+            <Button variant="contained" onClick={handleReportBugSubmit}>
+              Gửi
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Toolbar>
     </AppBar>
   );

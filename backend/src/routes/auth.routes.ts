@@ -11,6 +11,9 @@ import {
   updateProfile,
   changePassword,
   setPassword,
+  sendForgotPasswordOTP,
+  verifyOTP,
+  verifyOTPAndResetPassword,
 } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 
@@ -23,10 +26,14 @@ const registerValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Mật khẩu phải có ít nhất 6 ký tự')
-    .matches(/[A-Z]/, 'Mật khẩu phải có ít nhất một chữ cái viết hoa')
-    .matches(/[a-z]/, 'Mật khẩu phải có ít nhất một chữ cái thường')
-    .matches(/[0-9]/, 'Mật khẩu phải có ít nhất một số')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/, 'Mật khẩu phải có ít nhất một ký tự đặc biệt'),
+    .matches(/[A-Z]/)
+    .withMessage('Mật khẩu phải có ít nhất một chữ cái viết hoa')
+    .matches(/[a-z]/)
+    .withMessage('Mật khẩu phải có ít nhất một chữ cái thường')
+    .matches(/[0-9]/)
+    .withMessage('Mật khẩu phải có ít nhất một số')
+    .matches(/[!@#$%^&*(),.?":{}|<>]/)
+    .withMessage('Mật khẩu phải có ít nhất một ký tự đặc biệt'),
 ];
 
 const loginValidation = [
@@ -45,6 +52,11 @@ router.put('/set-password', protect, setPassword);
 // Account activation
 router.get('/activate/:token', activateAccount);
 router.post('/resend-activation', resendActivationEmail);
+
+// Forgot password
+router.post('/forgot-password', sendForgotPasswordOTP);
+router.post('/verify-otp', verifyOTP);
+router.post('/reset-password', verifyOTPAndResetPassword);
 
 // Google OAuth
 router.get(

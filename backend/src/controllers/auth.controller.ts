@@ -4,8 +4,9 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.model';
 import Subscription from '../models/Subscription.model';
+import OTP from '../models/OTP.model';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { sendActivationEmail } from '../services/email.service';
+import { sendActivationEmail, sendOTPEmail } from '../services/email.service';
 
 export const generateToken = (id: string): string => {
   const secret = process.env.JWT_SECRET || 'default-secret';
@@ -130,7 +131,7 @@ export const login = async (
     if (!user.password) {
       res.status(401).json({
         success: false,
-        message: 'Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.',
+        message: 'Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google hoặc đặt mật khẩu trong phần Profile để đăng nhập bằng email/mật khẩu.',
       });
       return;
     }
@@ -155,6 +156,7 @@ export const login = async (
         name: user.name,
         email: user.email,
         avatar: user.avatar,
+        isAdmin: user.isAdmin,
       },
     });
   } catch (error: any) {
@@ -202,6 +204,7 @@ export const activateAccount = async (
         id: user._id,
         name: user.name,
         email: user.email,
+        isAdmin: user.isAdmin,
       },
     });
   } catch (error: any) {
@@ -351,6 +354,7 @@ export const getMe = async (
         isActive: user.isActive,
         googleId: user.googleId,
         createdAt: user.createdAt,
+        isAdmin: user.isAdmin,
         hasPassword: !!user.password,
         trialUsageCount: user.trialUsageCount,
         remainingTrial,
@@ -618,6 +622,244 @@ export const setPassword = async (
         createdAt: updatedUser?.createdAt,
         hasPassword: !!updatedUser?.password,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message,
+    });
+  }
+};
+
+export const sendForgotPasswordOTP = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập email',
+      });
+      return;
+    }
+
+    // Check if user exists and get password field
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      res.json({
+        success: true,
+        message: 'Nếu email tồn tại, mã OTP đã được gửi đến email của bạn.',
+      });
+      return;
+    }
+
+    // Check if user has password (not Google-only account)
+    if (!user.password) {
+      res.status(400).json({
+        success: false,
+        message: 'Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google hoặc đặt mật khẩu trong phần Profile để có thể đặt lại mật khẩu.',
+      });
+      return;
+    }
+
+    // Check rate limit: 2 minutes (120 seconds)
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const recentOTP = await OTP.findOne({
+      email: email.toLowerCase().trim(),
+      createdAt: { $gte: twoMinutesAgo },
+    }).sort({ createdAt: -1 });
+
+    if (recentOTP) {
+      const timeRemaining = Math.ceil(
+        (recentOTP.createdAt.getTime() + 2 * 60 * 1000 - Date.now()) / 1000
+      );
+      res.status(429).json({
+        success: false,
+        message: `Vui lòng đợi ${timeRemaining} giây trước khi gửi lại mã OTP.`,
+        timeRemaining,
+      });
+      return;
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set expiration to 10 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    // Delete old OTPs for this email
+    await OTP.deleteMany({ email: email.toLowerCase().trim() });
+
+    // Save new OTP
+    await OTP.create({
+      email: email.toLowerCase().trim(),
+      code: otpCode,
+      expiresAt,
+    });
+
+    // Send OTP email
+    try {
+      await sendOTPEmail(email.toLowerCase().trim(), user.name, otpCode);
+      res.json({
+        success: true,
+        message: 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.',
+      });
+    } catch (emailError: any) {
+      console.error('Failed to send OTP email:', emailError);
+      res.status(500).json({
+        success: false,
+        message: 'Không thể gửi email OTP. Vui lòng thử lại sau.',
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message,
+    });
+  }
+};
+
+export const verifyOTP = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin',
+      });
+      return;
+    }
+
+    // Find OTP
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase().trim(),
+      code: otp,
+      expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      res.status(400).json({
+        success: false,
+        message: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Mã OTP hợp lệ',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server',
+      error: error.message,
+    });
+  }
+};
+
+export const verifyOTPAndResetPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: 'Vui lòng nhập đầy đủ thông tin',
+      });
+      return;
+    }
+
+    // Validate new password
+    if (newPassword.length < 6) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự',
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất một chữ cái viết hoa',
+      });
+      return;
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất một chữ cái thường',
+      });
+      return;
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất một số',
+      });
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất một ký tự đặc biệt',
+      });
+      return;
+    }
+
+    // Find OTP
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase().trim(),
+      code: otp,
+      expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      res.status(400).json({
+        success: false,
+        message: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+      });
+      return;
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng',
+      });
+      return;
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    // Delete used OTP
+    await OTP.deleteMany({ email: email.toLowerCase().trim() });
+
+    res.json({
+      success: true,
+      message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới.',
     });
   } catch (error: any) {
     res.status(500).json({

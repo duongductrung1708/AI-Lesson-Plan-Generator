@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes';
 import lessonPlanRoutes from './routes/lessonPlan.routes';
 import uploadRoutes from './routes/upload.routes';
 import billingRoutes from './routes/billing.routes';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lesson-plans', lessonPlanRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

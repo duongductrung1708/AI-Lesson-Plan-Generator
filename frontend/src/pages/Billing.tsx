@@ -79,14 +79,20 @@ const Billing = () => {
   const handleSubscribe = async (duration: 1 | 6 | 12) => {
     setProcessing(true);
     try {
-      const response = await axios.post("/api/billing", {
+      const response = await axios.post("/api/billing/momo", {
         duration,
-        paymentMethod: "manual", // In production, integrate with payment gateway
       });
-      toast.success("Đăng ký gói thành công!");
-      setSubscription(response.data.data);
+
+      if (response.data?.payUrl) {
+        toast.success("Đang chuyển đến trang thanh toán MoMo...");
+        window.location.href = response.data.payUrl;
+      } else {
+        toast.error("Không lấy được link thanh toán MoMo.");
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi đăng ký gói");
+      toast.error(
+        error.response?.data?.message || "Lỗi khi tạo thanh toán MoMo"
+      );
     } finally {
       setProcessing(false);
     }

@@ -166,19 +166,38 @@ const Login = () => {
                 helperText={errors.email}
               />
 
-              <PasswordInput
-                label="Mật khẩu"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: '' });
-                }}
-                required
-                placeholder="Nhập mật khẩu của bạn"
-                disabled={loading}
-                error={!!errors.password}
-                helperText={errors.password}
-              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <PasswordInput
+                  label="Mật khẩu"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors({ ...errors, password: '' });
+                  }}
+                  required
+                  placeholder="Nhập mật khẩu của bạn"
+                  disabled={loading}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                />
+                <Box textAlign="right">
+                  <MuiLink
+                    component={Link}
+                    to="/forgot-password"
+                    sx={{
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      color: 'primary.main',
+                      textDecoration: 'none',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    Quên mật khẩu?
+                  </MuiLink>
+                </Box>
+              </Box>
 
               <Button
                 type="submit"

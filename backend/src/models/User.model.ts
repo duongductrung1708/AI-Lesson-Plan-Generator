@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password?: string;
   googleId?: string;
   avatar?: string;
+  isAdmin: boolean;
   isActive: boolean;
   activationToken?: string;
   activationTokenExpires?: Date;
@@ -41,6 +42,10 @@ const UserSchema: Schema = new Schema({
   },
   avatar: {
     type: String,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
   },
   isActive: {
     type: Boolean,
