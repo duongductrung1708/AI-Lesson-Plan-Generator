@@ -12,12 +12,10 @@ import {
 } from '@mui/material';
 import { CheckCircle, Error as ErrorIcon, Email } from '@mui/icons-material';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
 
 const ActivateAccount = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { login: setAuthToken } = useAuth();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');

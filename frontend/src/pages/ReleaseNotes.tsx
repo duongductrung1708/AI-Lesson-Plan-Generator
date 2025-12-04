@@ -56,7 +56,7 @@ const ReleaseNotes = () => {
         Theo dõi các cập nhật mới nhất của AI Lesson Plan Generator.
       </Typography>
 
-      {releases.map((release, index) => (
+      {releases.map((release) => (
         <Paper key={release.version} elevation={2} sx={{ p: 3, mb: 3 }}>
           <Box
             display="flex"
