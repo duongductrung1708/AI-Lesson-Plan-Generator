@@ -1,0 +1,19 @@
+{
+  "name": "ai-lesson-plan-generator",
+  "version": "1.0.0",
+  "description": "AI Lesson Plan Generator - MERN Stack Application",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm start",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["mern", "ai", "lesson-plan", "education"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
