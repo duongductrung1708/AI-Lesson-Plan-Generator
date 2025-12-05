@@ -215,8 +215,35 @@ YÊU CẦU VỀ CÁCH VIẾT:
 - Gợi ý lời thoại của Giáo viên tự nhiên, sư phạm, khơi gợi hứng thú.
 - Nội dung phải phù hợp với lứa tuổi học sinh tiểu học, đúng chuẩn kiến thức – kĩ năng GDPT 2018.
 
+YÊU CẦU VỀ ĐỊNH DẠNG MARKDOWN (RẤT QUAN TRỌNG):
+Khi trả về nội dung trong trường "to_chuc" (tổ chức hoạt động), bạn PHẢI sử dụng định dạng markdown với:
+1. **Bảng 2 cột** để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song:
+   - Cột 1: Hoạt động của Giáo viên
+   - Cột 2: Hoạt động của Học sinh
+   - Mỗi hàng tương ứng với một bước trong quá trình dạy học
+   - Ví dụ format bảng markdown:
+     | **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |
+     |------------------------------|----------------------------|
+     | GV đặt câu hỏi: "Các em thấy...?" | HS quan sát và trả lời |
+     | GV hướng dẫn HS làm việc nhóm | HS thảo luận trong nhóm |
+   
+2. **In đậm** cho các tiêu đề, từ khóa quan trọng: **Mục tiêu**, **Phương pháp**, **Thời gian**
+3. **In nghiêng** cho lời thoại, ví dụ: *"Các em hãy quan sát..."*
+4. **Căn dòng** sử dụng markdown lists (- hoặc 1.) cho các bước, nội dung
+5. **Bảng thời gian** nếu cần: | Bước | Thời gian | Nội dung |
+
 RẤT QUAN TRỌNG – ĐỊNH DẠNG KẾT QUẢ:
 Chỉ trả về MỘT đối tượng JSON hợp lệ, không thêm bất kỳ giải thích hay văn bản ngoài JSON nào.
+
+LƯU Ý VỀ ĐỊNH DẠNG TRONG JSON:
+- Trong trường "to_chuc.giao_vien" và "to_chuc.hoc_sinh", bạn có thể sử dụng markdown:
+  + **In đậm** cho các từ khóa: **Bước 1**, **GV**, **HS**
+  + *In nghiêng* cho lời thoại: *"Các em hãy quan sát..."*
+  + Số thứ tự: 1., 2., 3. hoặc Bước 1:, Bước 2:
+- Mỗi phần tử trong mảng "giao_vien" và "hoc_sinh" tương ứng với nhau (cùng bước)
+- Ví dụ:
+  "giao_vien": [ "**Bước 1:** GV đặt câu hỏi: *\"Các em thấy gì trong hình?\"*", "**Bước 2:** GV hướng dẫn HS làm việc nhóm" ],
+  "hoc_sinh": [ "HS quan sát và trả lời câu hỏi", "HS thảo luận trong nhóm 4 người" ]
 
 ĐỊNH DẠNG JSON CHÍNH XÁC (VIẾT ĐÚNG TÊN TRƯỜNG):
 {
@@ -243,8 +270,8 @@ Chỉ trả về MỘT đối tượng JSON hợp lệ, không thêm bất kỳ 
         "muc_tieu": [ "..." ],
         "phuong_phap": [ "trò chơi", "thảo luận nhóm" ],
         "to_chuc": {
-          "giao_vien": [ "Bước 1: ...", "Bước 2: ..." ],
-          "hoc_sinh": [ "HS lắng nghe...", "HS thảo luận nhóm..." ]
+          "giao_vien": [ "**Bước 1:** GV đặt câu hỏi: *\"Các em thấy...?\"*", "**Bước 2:** GV hướng dẫn HS làm việc nhóm" ],
+          "hoc_sinh": [ "HS quan sát và trả lời", "HS thảo luận trong nhóm" ]
         },
         "san_pham": [ "..." ]
       }
@@ -312,6 +339,19 @@ LƯU Ý:
 - Sử dụng thông tin từ tài liệu đã upload (nếu có) để làm ngữ cảnh
 - Phương pháp dạy học phải đa dạng, phù hợp với từng hoạt động
 - Đảm bảo tính khoa học, sư phạm và phù hợp với chương trình giáo dục Việt Nam
+
+YÊU CẦU VỀ ĐỊNH DẠNG MARKDOWN (RẤT QUAN TRỌNG):
+Khi viết nội dung trong trường "content", bạn PHẢI sử dụng định dạng markdown với:
+1. **Bảng 2 cột** để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song (nếu có):
+   | **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |
+   |------------------------------|----------------------------|
+   | GV đặt câu hỏi: "Các em thấy...?" | HS quan sát và trả lời |
+   | GV hướng dẫn HS làm việc nhóm | HS thảo luận trong nhóm |
+   
+2. **In đậm** cho các tiêu đề, từ khóa quan trọng: **Mục tiêu**, **Phương pháp**, **Thời gian**, **Nội dung**
+3. **In nghiêng** cho lời thoại, ví dụ: *"Các em hãy quan sát..."*
+4. **Lists** sử dụng - hoặc 1. cho các bước, nội dung
+5. **Bảng thời gian** nếu cần: | Bước | Thời gian | Nội dung |
 
 Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
 
@@ -381,6 +421,27 @@ const validateAndFormatLessonPlan = (
         const hs = toArray(act.to_chuc?.hoc_sinh);
         const sp = toArray(act.san_pham);
 
+        // Tạo bảng markdown cho tổ chức hoạt động (2 cột: GV và HS)
+        let toChucTable = '';
+        if (gv.length > 0 || hs.length > 0) {
+          const maxRows = Math.max(gv.length, hs.length);
+          const tableRows: string[] = [];
+          tableRows.push('| **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |');
+          tableRows.push('|------------------------------|----------------------------|');
+          
+          for (let i = 0; i < maxRows; i++) {
+            const gvText = gv[i] || '';
+            const hsText = hs[i] || '';
+            // Escape pipe characters in content
+            const gvEscaped = gvText.replace(/\|/g, '\\|');
+            const hsEscaped = hsText.replace(/\|/g, '\\|');
+            tableRows.push(`| ${gvEscaped} | ${hsEscaped} |`);
+          }
+          toChucTable = tableRows.join('\n');
+        } else {
+          toChucTable = '| **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |\n|------------------------------|----------------------------|\n| ... | ... |';
+        }
+
         return [
           `**${name}**`,
           '',
@@ -392,11 +453,7 @@ const validateAndFormatLessonPlan = (
           '',
           '**Tổ chức hoạt động:**',
           '',
-          '**Hoạt động của Giáo viên**',
-          ...(gv.length ? gv.map((g) => `- ${g}`) : ['- ...']),
-          '',
-          '**Hoạt động của Học sinh**',
-          ...(hs.length ? hs.map((h) => `- ${h}`) : ['- ...']),
+          toChucTable,
           '',
           '**Sản phẩm / kết quả:**',
           ...(sp.length ? sp.map((s) => `- ${s}`) : ['- ...']),

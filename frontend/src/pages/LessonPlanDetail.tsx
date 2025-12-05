@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -351,7 +352,54 @@ const LessonPlanDetail = () => {
                       {activity.title}
                     </h3>
                     <div className="prose max-w-none pl-7">
-                      <ReactMarkdown className="text-gray-700">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          table: ({ children }) => (
+                            <div className="overflow-x-auto my-4">
+                              <table className="min-w-full border-collapse border border-gray-300 bg-white shadow-sm">
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          thead: ({ children }) => (
+                            <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                              {children}
+                            </thead>
+                          ),
+                          tbody: ({ children }) => (
+                            <tbody className="divide-y divide-gray-200">
+                              {children}
+                            </tbody>
+                          ),
+                          tr: ({ children }) => (
+                            <tr className="hover:bg-gray-50 transition-colors">
+                              {children}
+                            </tr>
+                          ),
+                          th: ({ children }) => (
+                            <th className="px-4 py-3 text-left font-bold text-sm border border-gray-300">
+                              {children}
+                            </th>
+                          ),
+                          td: ({ children }) => (
+                            <td className="px-4 py-3 text-sm text-gray-700 border border-gray-300 align-top">
+                              {children}
+                            </td>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-bold text-gray-900">
+                              {children}
+                            </strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic text-gray-600">
+                              {children}
+                            </em>
+                          ),
+                        }}
+                        className="text-gray-700"
+                      >
                         {activity.content}
                       </ReactMarkdown>
                     </div>
