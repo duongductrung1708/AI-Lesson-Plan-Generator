@@ -1,0 +1,28 @@
+services:
+  # Backend API Service
+  - type: web
+    name: ai-lesson-plan-backend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install --ignore-scripts || npm install || true; cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Add your environment variables in Render dashboard:
+      # - MONGODB_URI
+      # - JWT_SECRET
+      # - JWT_EXPIRE
+      # - GEMINI_API_KEY
+      # - GOOGLE_CLIENT_ID
+      # - GOOGLE_CLIENT_SECRET
+      # - GOOGLE_CALLBACK_URL
+      # - EMAIL_USER
+      # - EMAIL_PASS
+      # - AWS_ACCESS_KEY_ID
+      # - AWS_SECRET_ACCESS_KEY
+      # - AWS_REGION
+      # - AWS_S3_BUCKET_NAME
