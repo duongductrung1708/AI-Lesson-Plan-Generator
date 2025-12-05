@@ -18,6 +18,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import PasswordInput from '../components/PasswordInput';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '../config/axios.config';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -236,7 +237,7 @@ const Login = () => {
             fullWidth
             startIcon={<Google />}
             onClick={() => {
-              window.location.href = '/api/auth/google';
+              window.location.href = getApiUrl('/api/auth/google');
             }}
             sx={{
               py: 1.5,

@@ -16,6 +16,7 @@ import {
 import { PersonAdd as PersonAddIcon, Google } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import PasswordInput from "../components/PasswordInput";
+import { getApiUrl } from "../config/axios.config";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -258,7 +259,7 @@ const Register = () => {
             fullWidth
             startIcon={<Google />}
             onClick={() => {
-              window.location.href = "/api/auth/google";
+              window.location.href = getApiUrl("/api/auth/google");
             }}
             sx={{
               py: 1.5,
