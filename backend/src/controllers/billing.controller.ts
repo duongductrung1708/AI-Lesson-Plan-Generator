@@ -15,25 +15,39 @@ const activateSubscriptionForUser = async (
   paymentMethod: string,
   paymentStatus: 'pending' | 'paid' | 'failed'
 ) => {
-  const endDate = new Date();
-  endDate.setMonth(endDate.getMonth() + duration);
-
   let subscription = await Subscription.findOne({ userId });
+  const now = new Date();
+
+  const addMonths = (date: Date, months: number) => {
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  };
 
   if (subscription) {
+    const isActive =
+      subscription.status === 'active' &&
+      subscription.paymentStatus === 'paid' &&
+      subscription.endDate > now;
+
+    // If current sub is active, extend from existing endDate; else reset from now
+    const newStartDate = isActive ? subscription.startDate || now : now;
+    const baseEndDate = isActive ? subscription.endDate : now;
+
     subscription.duration = duration as 1 | 6 | 12;
     subscription.status = paymentStatus === 'paid' ? 'active' : 'expired';
-    subscription.startDate = new Date();
-    subscription.endDate = endDate;
+    subscription.startDate = newStartDate;
+    subscription.endDate = addMonths(baseEndDate, duration);
     subscription.paymentMethod = paymentMethod;
     subscription.paymentStatus = paymentStatus;
     await subscription.save();
   } else {
+    const endDate = addMonths(now, duration);
     subscription = await Subscription.create({
       userId,
       duration,
       status: paymentStatus === 'paid' ? 'active' : 'expired',
-      startDate: new Date(),
+      startDate: now,
       endDate,
       paymentMethod,
       paymentStatus,
@@ -332,20 +346,23 @@ export const handleMomoIpn = async (
     const accessKey = process.env.MOMO_ACCESS_KEY || '';
     const secretKey = process.env.MOMO_SECRET_KEY || '';
 
+    // MoMo IPN signature order (per docs):
+    // accessKey, amount, extraData, message, orderId, orderInfo, orderType,
+    // partnerCode, payType, requestId, responseTime, resultCode, transId
     const rawSignature = [
       `accessKey=${accessKey}`,
       `amount=${amount}`,
       `extraData=${extraData}`,
+      `message=${message}`,
       `orderId=${orderId}`,
       `orderInfo=${orderInfo}`,
-      `orderType=${orderType}`,
+      `orderType=${orderType || ''}`,
       `partnerCode=${partnerCode}`,
-      `payType=${payType}`,
+      `payType=${payType || ''}`,
       `requestId=${requestId}`,
       `responseTime=${responseTime}`,
       `resultCode=${resultCode}`,
       `transId=${transId}`,
-      `message=${message}`,
     ].join('&');
 
     const expectedSignature = crypto

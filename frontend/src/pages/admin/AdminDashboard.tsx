@@ -1235,6 +1235,9 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
+                          sx={{
+                            color: "white",
+                          }}
                             label={
                               tx.status === "active"
                                 ? "Đang hoạt động"
