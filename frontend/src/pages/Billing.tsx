@@ -36,10 +36,28 @@ const Billing = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [pricing, setPricing] = useState<Record<number, number>>({
+    1: 99000,
+    6: 499000,
+    12: 899000,
+  });
 
   useEffect(() => {
+    fetchPricing();
     fetchSubscription();
   }, []);
+
+  const fetchPricing = async () => {
+    try {
+      const response = await axios.get("/api/billing/pricing");
+      if (response.data?.success && response.data?.data) {
+        setPricing(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching pricing:", error);
+      // Keep default pricing on error
+    }
+  };
 
   const fetchSubscription = async () => {
     try {
@@ -125,15 +143,17 @@ const Billing = () => {
   };
 
   const getDurationPrice = (duration: number) => {
-    const monthlyPrice = 50000; // 199k VNĐ/tháng
-    const totalPrice = monthlyPrice * duration;
-    const discount = duration === 6 ? 0.1 : duration === 12 ? 0.2 : 0; // 10% off for 6 months, 20% off for 12 months
-    const finalPrice = totalPrice * (1 - discount);
+    const finalPrice = pricing[duration] || 0;
+    
+    // Calculate monthly price and discount for display
+    const baseMonthlyPrice = pricing[1] || 99000; // Use 1 month price as base
+    const totalPrice = baseMonthlyPrice * duration;
+    const discount = totalPrice > 0 ? (totalPrice - finalPrice) / totalPrice : 0;
 
     return {
-      monthly: monthlyPrice,
+      monthly: baseMonthlyPrice,
       total: totalPrice,
-      final: Math.round(finalPrice),
+      final: finalPrice,
       discount,
     };
   };

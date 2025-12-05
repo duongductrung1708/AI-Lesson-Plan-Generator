@@ -4,6 +4,7 @@ import Subscription from '../models/Subscription.model';
 import LessonPlan from '../models/LessonPlan.model';
 import { protect } from '../middleware/auth.middleware';
 import { requireAdmin } from '../middleware/admin.middleware';
+import { PLAN_PRICING } from '../controllers/billing.controller';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
@@ -299,6 +300,64 @@ router.delete('/lesson-plans/:id', async (req, res) => {
     res.json({ message: 'Đã xóa giáo án.' });
   } catch (error) {
     res.status(500).json({ message: 'Không xóa được giáo án.' });
+  }
+});
+
+// ===== Payment Statistics =====
+
+router.get('/payments/stats', async (_req, res) => {
+  try {
+    // Get all paid subscriptions
+    const paidSubs = await Subscription.find({ paymentStatus: 'paid' })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Calculate total revenue
+    let totalRevenue = 0;
+    const revenueByDuration: Record<number, number> = { 1: 0, 6: 0, 12: 0 };
+    const revenueByMonth: Record<string, number> = {};
+    const transactionCount = paidSubs.length;
+    
+    paidSubs.forEach((sub) => {
+      if (sub.duration && PLAN_PRICING[sub.duration]) {
+        const amount = PLAN_PRICING[sub.duration];
+        totalRevenue += amount;
+        revenueByDuration[sub.duration] += amount;
+        
+        // Group by month
+        const monthKey = new Date(sub.createdAt).toISOString().slice(0, 7); // YYYY-MM
+        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + amount;
+      }
+    });
+
+    // Get failed/pending counts
+    const failedCount = await Subscription.countDocuments({ paymentStatus: 'failed' });
+    const pendingCount = await Subscription.countDocuments({ paymentStatus: 'pending' });
+
+    // Get recent transactions (last 10)
+    const recentTransactions = paidSubs.slice(0, 10).map((sub) => ({
+      id: sub._id,
+      userEmail: (sub.userId as any)?.email || 'N/A',
+      userName: (sub.userId as any)?.name || 'N/A',
+      duration: sub.duration,
+      amount: sub.duration ? PLAN_PRICING[sub.duration] : 0,
+      paymentMethod: sub.paymentMethod || 'N/A',
+      createdAt: sub.createdAt,
+      status: sub.status,
+    }));
+
+    res.json({
+      totalRevenue,
+      transactionCount,
+      failedCount,
+      pendingCount,
+      revenueByDuration,
+      revenueByMonth,
+      recentTransactions,
+    });
+  } catch (error) {
+    console.error('Payment stats error:', error);
+    res.status(500).json({ message: 'Không lấy được thống kê thanh toán.' });
   }
 });
 

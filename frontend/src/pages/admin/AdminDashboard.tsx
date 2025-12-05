@@ -34,6 +34,7 @@ import {
   Grow,
   Divider,
   MenuItem,
+  Grid,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -48,6 +49,7 @@ import {
   Edit,
   Add,
   Delete,
+  Payment,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -70,12 +72,13 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<
-    "stats" | "users" | "subscriptions" | "lessonPlans"
+    "stats" | "users" | "subscriptions" | "lessonPlans" | "payments"
   >("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [lessonPlans, setLessonPlans] = useState<any[]>([]);
+  const [paymentStats, setPaymentStats] = useState<any>(null);
   const [viewUserOpen, setViewUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -155,6 +158,15 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchPaymentStats = async () => {
+    try {
+      const res = await axios.get("/api/admin/payments/stats");
+      setPaymentStats(res.data);
+    } catch {
+      toast.error("Không tải được thống kê thanh toán.");
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchUsers();
@@ -162,6 +174,13 @@ const AdminDashboard = () => {
     fetchLessonPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (selectedTab === "payments") {
+      fetchPaymentStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab]);
 
   const handleToggleUserActive = async (id: string, isActive: boolean) => {
     try {
@@ -383,6 +402,24 @@ const AdminDashboard = () => {
             <Description fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Giáo án" />
+        </ListItemButton>
+        <ListItemButton
+          selected={selectedTab === "payments"}
+          onClick={() => setSelectedTab("payments")}
+          sx={{
+            mx: 1,
+            mb: 0.5,
+            borderRadius: 2,
+            "&.Mui-selected": {
+              bgcolor: "primary.50",
+              "& .MuiListItemIcon-root": { color: "primary.main" },
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Payment fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Thanh toán" />
         </ListItemButton>
       </List>
       <Box sx={{ px: 2, py: 2 }}>
@@ -927,6 +964,319 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderPayments = () => {
+    if (!paymentStats) {
+      return (
+        <Box sx={{ p: 3, textAlign: "center" }}>
+          <Typography>Đang tải thống kê thanh toán...</Typography>
+        </Box>
+      );
+    }
+
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(amount);
+    };
+
+    const formatDate = (dateString: string | Date) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("vi-VN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const revenueByMonthEntries = Object.entries(
+      paymentStats.revenueByMonth || {}
+    ).sort(([a], [b]) => a.localeCompare(b));
+
+    return (
+      <Box sx={{ p: 3 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", md: "center" }}
+          mb={3}
+          spacing={2}
+        >
+          <Typography variant="h5">Thống kê thanh toán</Typography>
+          <Button variant="outlined" onClick={fetchPaymentStats}>
+            Tải lại
+          </Button>
+        </Stack>
+
+        {/* Summary Cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Grow in timeout={300}>
+              <Paper
+                sx={{
+                  p: 2,
+                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Tổng doanh thu
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {formatCurrency(paymentStats.totalRevenue || 0)}
+                </Typography>
+              </Paper>
+            </Grow>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Grow in timeout={400}>
+              <Paper
+                sx={{
+                  p: 2,
+                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Giao dịch thành công
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {paymentStats.transactionCount || 0}
+                </Typography>
+              </Paper>
+            </Grow>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Grow in timeout={500}>
+              <Paper
+                sx={{
+                  p: 2,
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Đang chờ thanh toán
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {paymentStats.pendingCount || 0}
+                </Typography>
+              </Paper>
+            </Grow>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Grow in timeout={600}>
+              <Paper
+                sx={{
+                  p: 2,
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Giao dịch thất bại
+                </Typography>
+                <Typography variant="h4" fontWeight="bold">
+                  {paymentStats.failedCount || 0}
+                </Typography>
+              </Paper>
+            </Grow>
+          </Grid>
+        </Grid>
+
+        {/* Revenue by Duration */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Doanh thu theo gói
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: "center", p: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  1 tháng
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color="primary">
+                  {formatCurrency(paymentStats.revenueByDuration?.[1] || 0)}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: "center", p: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  6 tháng
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color="primary">
+                  {formatCurrency(paymentStats.revenueByDuration?.[6] || 0)}
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: "center", p: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  12 tháng
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color="primary">
+                  {formatCurrency(paymentStats.revenueByDuration?.[12] || 0)}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {/* Revenue by Month Chart */}
+        {revenueByMonthEntries.length > 0 && (
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Doanh thu theo tháng
+            </Typography>
+            <Box sx={{ mt: 2 }}>
+              {revenueByMonthEntries.map(([month, revenue]) => (
+                <Box key={month} sx={{ mb: 2 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={1}
+                  >
+                    <Typography variant="body2">
+                      {new Date(month + "-01").toLocaleDateString("vi-VN", {
+                        year: "numeric",
+                        month: "long",
+                      })}
+                    </Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {formatCurrency(revenue as number)}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 8,
+                      bgcolor: "primary.100",
+                      borderRadius: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: "100%",
+                        bgcolor: "primary.main",
+                        width: `${
+                          ((revenue as number) /
+                            paymentStats.totalRevenue) *
+                          100
+                        }%`,
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          </Paper>
+        )}
+
+        {/* Recent Transactions */}
+        <Paper>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Giao dịch gần đây
+            </Typography>
+          </Box>
+          <Fade in timeout={300}>
+            <Box>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Người dùng</TableCell>
+                    <TableCell>Gói</TableCell>
+                    <TableCell>Số tiền</TableCell>
+                    <TableCell>Phương thức</TableCell>
+                    <TableCell>Trạng thái</TableCell>
+                    <TableCell>Ngày tạo</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paymentStats.recentTransactions?.length > 0 ? (
+                    paymentStats.recentTransactions.map((tx: any) => (
+                      <TableRow key={tx.id}>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {tx.userName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {tx.userEmail}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          {tx.duration === 1
+                            ? "1 tháng"
+                            : tx.duration === 6
+                            ? "6 tháng"
+                            : tx.duration === 12
+                            ? "1 năm"
+                            : `${tx.duration} tháng`}
+                        </TableCell>
+                        <TableCell>
+                          <Typography fontWeight="bold" color="success.main">
+                            {formatCurrency(tx.amount)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={tx.paymentMethod}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={
+                              tx.status === "active"
+                                ? "Đang hoạt động"
+                                : tx.status === "expired"
+                                ? "Hết hạn"
+                                : "Đã hủy"
+                            }
+                            size="small"
+                            color={
+                              tx.status === "active"
+                                ? "success"
+                                : tx.status === "expired"
+                                ? "warning"
+                                : "error"
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {formatDate(tx.createdAt)}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography color="text.secondary" sx={{ py: 3 }}>
+                          Chưa có giao dịch nào
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+          </Fade>
+        </Paper>
+      </Box>
+    );
+  };
+
   return (
     <Box sx={{ display: "flex" }}>
       <AppBar
@@ -1063,6 +1413,7 @@ const AdminDashboard = () => {
           {selectedTab === "users" && renderUsers()}
           {selectedTab === "subscriptions" && renderSubscriptions()}
           {selectedTab === "lessonPlans" && renderLessonPlans()}
+          {selectedTab === "payments" && renderPayments()}
         </Container>
 
         {/* View user dialog */}

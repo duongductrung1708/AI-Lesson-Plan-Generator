@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth.middleware';
 import Subscription from '../models/Subscription.model';
 
-const PLAN_PRICING: Record<number, number> = {
+export const PLAN_PRICING: Record<number, number> = {
   1: 99000,
   6: 499000,
   12: 899000,
@@ -41,6 +41,24 @@ const activateSubscriptionForUser = async (
   }
 
   return subscription;
+};
+
+export const getPricing = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    res.json({
+      success: true,
+      data: PLAN_PRICING,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy thông tin giá',
+      error: error.message,
+    });
+  }
 };
 
 export const getSubscription = async (
@@ -200,7 +218,10 @@ export const createMomoPayment = async (
       'utf8'
     ).toString('base64');
 
-    const requestType = 'captureWallet';
+    // Use payWithMethod to show all payment options (ATM, Credit Card, Wallet)
+    // captureWallet only shows QR code for MoMo Wallet
+    // payWithATM only shows ATM option
+    const requestType = 'payWithMethod';
     const rawSignature = [
       `accessKey=${accessKey}`,
       `amount=${amount}`,
@@ -243,7 +264,18 @@ export const createMomoPayment = async (
 
     const data = (await resp.json()) as any;
 
+    // Log payment creation for debugging
+    console.log('=== MoMo Payment Created ===');
+    console.log('Order ID:', orderId);
+    console.log('Amount:', amount);
+    console.log('Duration:', duration, 'months');
+    console.log('User:', authReq.user!.email);
+    console.log('Result Code:', data.resultCode);
+    console.log('Pay URL:', data.payUrl);
+    console.log('============================');
+
     if (data.resultCode !== 0) {
+      console.error('❌ Failed to create MoMo payment:', data.message);
       res.status(400).json({
         success: false,
         message: data.message || 'Không tạo được phiên thanh toán MoMo',
@@ -287,6 +319,16 @@ export const handleMomoIpn = async (
       signature,
     } = req.body;
 
+    // Log IPN request for debugging (especially in test mode)
+    console.log('=== MoMo IPN Received ===');
+    console.log('Order ID:', orderId);
+    console.log('Amount:', amount);
+    console.log('Result Code:', resultCode);
+    console.log('Message:', message);
+    console.log('Transaction ID:', transId);
+    console.log('Payment Type:', payType);
+    console.log('========================');
+
     const accessKey = process.env.MOMO_ACCESS_KEY || '';
     const secretKey = process.env.MOMO_SECRET_KEY || '';
 
@@ -312,6 +354,9 @@ export const handleMomoIpn = async (
       .digest('hex');
 
     if (expectedSignature !== signature) {
+      console.error('❌ IPN Signature mismatch!');
+      console.error('Expected:', expectedSignature);
+      console.error('Received:', signature);
       res.status(400).json({ resultCode: 1, message: 'Sai chữ ký' });
       return;
     }
@@ -321,17 +366,30 @@ export const handleMomoIpn = async (
         ? JSON.parse(Buffer.from(extraData, 'base64').toString('utf8'))
         : null;
 
+    console.log('Extra Data:', extra);
+
     if (resultCode === 0 && extra?.userId && extra?.duration) {
+      console.log('✅ Payment successful! Activating subscription...');
+      console.log('User ID:', extra.userId);
+      console.log('Duration:', extra.duration, 'months');
+      
       await activateSubscriptionForUser(
         extra.userId,
         Number(extra.duration),
         'momo',
         'paid'
       );
+      
+      console.log('✅ Subscription activated successfully!');
+    } else {
+      console.log('⚠️ Payment not successful or missing data');
+      console.log('Result Code:', resultCode);
+      console.log('Extra Data:', extra);
     }
 
     res.json({ resultCode: 0, message: 'IPN received' });
   } catch (error: any) {
+    console.error('❌ IPN Error:', error);
     res.status(500).json({
       resultCode: 1,
       message: 'Lỗi xử lý IPN',
