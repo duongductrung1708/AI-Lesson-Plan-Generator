@@ -33,7 +33,9 @@ Vercel chủ yếu dành cho frontend static sites. Backend Express.js cần dep
    ```
    (Thay `https://your-app.onrender.com` bằng URL backend của bạn)
 
-5. Deploy
+5. **File `vercel.json` đã được tạo sẵn** trong thư mục `frontend` để xử lý SPA routing (tránh lỗi 404 khi refresh)
+
+6. Deploy
 
 ### Bước 3: Cấu hình CORS trên Backend
 
@@ -69,4 +71,9 @@ MOMO_IPN_URL=https://your-app.onrender.com/api/billing/momo-ipn
 - Xóa cache trình duyệt
 - Kiểm tra lại `VITE_API_URL` trong Vercel dashboard
 - Rebuild frontend
+
+### Lỗi 404 khi refresh trang
+- File `vercel.json` đã được tạo trong thư mục `frontend` để xử lý SPA routing
+- Nếu vẫn gặp lỗi, đảm bảo file `vercel.json` có trong repo và được deploy
+- Redeploy lại frontend sau khi thêm file `vercel.json`
 
