@@ -5,7 +5,7 @@ import User from '../models/User.model';
 import Subscription from '../models/Subscription.model';
 import { generateLessonPlan } from '../services/ai.service';
 import { deleteFiles } from '../services/file.service';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Spacing, Indent, Table, TableRow, TableCell, WidthType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Spacing, Indent, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle } from 'docx';
 
 const getCurrentMonth = (): string => {
   const now = new Date();
@@ -278,6 +278,13 @@ export const downloadLessonPlan = async (
     const activities = content.activities || {};
     const adjustment = content.adjustment || { nhanXet: '', huongDieuChinh: [] };
 
+    // Helper function to clean markdown formatting (remove ** and other markdown)
+    const cleanMarkdown = (text: string): string => {
+      if (!text) return '';
+      // Remove markdown bold (**text**)
+      return text.replace(/\*\*/g, '').replace(/\*/g, '');
+    };
+
     // Helper function to create formatted paragraph with spacing
     const createParagraph = (text: string, options?: {
       heading?: (typeof HeadingLevel)[keyof typeof HeadingLevel];
@@ -285,9 +292,11 @@ export const downloadLessonPlan = async (
       spacing?: { before?: number; after?: number };
       indent?: { left?: number };
     }): Paragraph => {
-      const runs = text ? [new TextRun({
-        text,
+      const cleanedText = cleanMarkdown(text);
+      const runs = cleanedText ? [new TextRun({
+        text: cleanedText,
         bold: options?.bold || false,
+        size: 26, // 13pt = 26 half-points
       })] : [];
       
       return new Paragraph({
@@ -307,6 +316,7 @@ export const downloadLessonPlan = async (
     const children: (Paragraph | Table)[] = [
       createParagraph('GIÁO ÁN', {
         heading: HeadingLevel.TITLE,
+        bold: true,
         spacing: { after: 2 },
       }),
       createParagraph(`Môn: ${safeText(lessonPlan.subject)}`, {
@@ -327,6 +337,7 @@ export const downloadLessonPlan = async (
       createParagraph('', { spacing: { after: 1 } }),
       createParagraph('I. YÊU CẦU CẦN ĐẠT', {
         heading: HeadingLevel.HEADING_1,
+        bold: true,
         spacing: { before: 1, after: 1 },
       }),
       createParagraph('1. Năng lực đặc thù', {
@@ -368,6 +379,7 @@ export const downloadLessonPlan = async (
       createParagraph('', { spacing: { after: 1 } }),
       createParagraph('II. ĐỒ DÙNG DẠY HỌC', {
         heading: HeadingLevel.HEADING_1,
+        bold: true,
         spacing: { before: 1, after: 1 },
       }),
       createParagraph(`- Giáo viên: ${safeArray(equipment.teacher).join(', ')}`, {
@@ -379,6 +391,7 @@ export const downloadLessonPlan = async (
       createParagraph('', { spacing: { after: 1 } }),
       createParagraph('III. CÁC HOẠT ĐỘNG DẠY HỌC', {
         heading: HeadingLevel.HEADING_1,
+        bold: true,
         spacing: { before: 1, after: 1 },
       }),
     ];
@@ -388,35 +401,165 @@ export const downloadLessonPlan = async (
       if (tableLines.length < 2) return null;
       
       const rows: TableRow[] = [];
+      let isFirstRow = true; // Track if this is the header row
+      let totalColumns = 0; // Store number of columns from header row
       
       for (let i = 0; i < tableLines.length; i++) {
         const line = tableLines[i].trim();
         if (!line || line.startsWith('|---')) continue; // Skip separator line
         
-        const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+        // Split by | and keep all cells, including empty ones
+        // Remove first and last empty elements (from leading/trailing |)
+        const rawCells = line.split('|');
+        const cells = rawCells.slice(1, -1).map(cell => cell.trim()); // Remove first and last empty from leading/trailing |
         if (cells.length === 0) continue;
         
-        const tableCells = cells.map(cell => {
-          // Remove markdown bold (**text**)
-          const cleanText = cell.replace(/\*\*/g, '');
-          const isBold = cell.includes('**');
+        // Store number of columns from header row
+        if (isFirstRow) {
+          totalColumns = cells.length;
+        }
+        
+        // Check if this row contains an activity title (check first cell)
+        const firstCellText = cleanMarkdown(cells[0] || '');
+        const isActivityTitleRow = /^\d+\.\s*HOẠT ĐỘNG/i.test(firstCellText);
+        
+        // Check if this row should be merged (activity title or sub-items like "Mục tiêu", "Cách tiến hành")
+        const shouldMergeRow = isActivityTitleRow || 
+                              /- Mục tiêu/i.test(firstCellText) || 
+                              /- Cách tiến hành/i.test(firstCellText);
+        
+        // If row should be merged, only create one cell that spans all columns
+        if (shouldMergeRow && cells.length > 0) {
+          const mergedText = cleanMarkdown(cells[0] || '');
+          const isBold = /^\d+\.\s*HOẠT ĐỘNG/i.test(mergedText) ||
+                        /Mục tiêu|Cách tiến hành/i.test(mergedText);
           
+          // Use totalColumns from header, or fallback to cells.length
+          const columnSpan = totalColumns > 0 ? totalColumns : cells.length;
+          
+          const tableCells = [
+            new TableCell({
+              columnSpan: columnSpan, // Span all columns
+              children: [
+                new Paragraph({
+                  alignment: isActivityTitleRow ? AlignmentType.CENTER : undefined,
+                  children: [
+                    new TextRun({
+                      text: mergedText || '\u00A0',
+                      bold: isBold,
+                      size: 26,
+                    }),
+                  ],
+                }),
+              ],
+              margins: {
+                top: 100,
+                bottom: 100,
+                left: 100,
+                right: 100,
+              },
+              borders: {
+                top: {
+                  style: BorderStyle.SINGLE,
+                  size: 4,
+                  color: '000000',
+                },
+                bottom: {
+                  style: BorderStyle.SINGLE,
+                  size: 4,
+                  color: '000000',
+                },
+                left: {
+                  style: BorderStyle.SINGLE,
+                  size: 4,
+                  color: '000000',
+                },
+                right: {
+                  style: BorderStyle.SINGLE,
+                  size: 4,
+                  color: '000000',
+                },
+              },
+            }),
+          ];
+          
+          rows.push(new TableRow({
+            children: tableCells,
+          }));
+          isFirstRow = false;
+          continue;
+        }
+        
+        const tableCells = cells.map((cell, cellIndex) => {
+          // Remove markdown bold (**text**) and clean text
+          let cleanText = cleanMarkdown(cell);
+          
+          // For non-header rows, ensure activities start with "-"
+          // Apply to all columns (both GV and HS) except header row
+          if (!isFirstRow && cleanText.trim()) {
+            const trimmedText = cleanText.trim();
+            // Skip if it's an activity title (starts with number and "HOẠT ĐỘNG")
+            const isActivityTitle = /^\d+\.\s*HOẠT ĐỘNG/i.test(trimmedText);
+            // If text doesn't start with "-" and is not empty, and not an activity title, add it
+            if (!isActivityTitle && !trimmedText.startsWith('-') && !trimmedText.startsWith('•')) {
+              cleanText = `- ${trimmedText}`;
+            }
+          }
+          
+          // Header row is always bold, or if cell contains activity titles or sub-items
+          const isBold = isFirstRow || 
+                        /^\d+\.\s*HOẠT ĐỘNG/i.test(cleanText) ||
+                        /Mục tiêu|Cách tiến hành/i.test(cleanText);
+          
+          // Center align for header row and activity title rows (all cells in the row)
+          const shouldCenterAlign = isFirstRow || isActivityTitleRow;
+          
+          // Ensure empty cells still have a paragraph to maintain borders
+          // Use non-breaking space if cell is empty to ensure border is visible
+          const displayText = cleanText.trim() || '\u00A0'; // Non-breaking space if empty
+          
+          const cellChildren = [
+            new Paragraph({
+              alignment: shouldCenterAlign ? AlignmentType.CENTER : undefined,
+              children: [
+                new TextRun({
+                  text: displayText,
+                  bold: isBold && displayText !== '\u00A0', // Don't bold empty cells
+                  size: 26, // 13pt = 26 half-points
+                }),
+              ],
+            }),
+          ];
+
           return new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: cleanText,
-                    bold: isBold,
-                  }),
-                ],
-              }),
-            ],
+            children: cellChildren,
             margins: {
               top: 100,
               bottom: 100,
               left: 100,
               right: 100,
+            },
+            borders: {
+              top: {
+                style: BorderStyle.SINGLE,
+                size: 4,
+                color: '000000',
+              },
+              bottom: {
+                style: BorderStyle.SINGLE,
+                size: 4,
+                color: '000000',
+              },
+              left: {
+                style: BorderStyle.SINGLE,
+                size: 4,
+                color: '000000',
+              },
+              right: {
+                style: BorderStyle.SINGLE,
+                size: 4,
+                color: '000000',
+              },
             },
           });
         });
@@ -424,6 +567,8 @@ export const downloadLessonPlan = async (
         rows.push(new TableRow({
           children: tableCells,
         }));
+        
+        isFirstRow = false; // After first row, no longer header
       }
       
       if (rows.length === 0) return null;
@@ -433,6 +578,38 @@ export const downloadLessonPlan = async (
         width: {
           size: 100,
           type: WidthType.PERCENTAGE,
+        },
+        borders: {
+          top: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
+          bottom: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
+          left: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
+          right: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
+          insideHorizontal: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
+          insideVertical: {
+            style: BorderStyle.SINGLE,
+            size: 4,
+            color: '000000',
+          },
         },
       });
     };
@@ -475,67 +652,40 @@ export const downloadLessonPlan = async (
         
         // Check if it's a heading (starts with ## or **)
         if (line.startsWith('##') || (line.startsWith('**') && line.endsWith('**'))) {
-          const text = line.replace(/^##+\s*/, '').replace(/\*\*/g, '');
+          const text = cleanMarkdown(line.replace(/^##+\s*/, ''));
           result.push(createParagraph(text, {
             bold: true,
             spacing: { before: 0.5, after: 0.3 },
           }));
+        } 
+        // Check if it's an activity title (starts with number and contains "HOẠT ĐỘNG")
+        else if (/^\d+\.\s*HOẠT ĐỘNG/i.test(line)) {
+          const text = cleanMarkdown(line);
+          result.push(createParagraph(text, {
+            bold: true,
+            spacing: { before: 0.5, after: 0.3 },
+          }));
+        }
+        // Check if it's a sub-item like "- Mục tiêu" or "- Cách tiến hành"
+        else if ((line.startsWith('- ') || line.startsWith('• ')) && 
+                 (/Mục tiêu|Cách tiến hành/i.test(line))) {
+          const text = cleanMarkdown(line.replace(/^[-•]\s*/, ''));
+          result.push(createParagraph(`- ${text}`, {
+            bold: true,
+            spacing: { after: 0.2 },
+            indent: { left: 1 },
+          }));
         } else if (line.includes('**') || line.includes('*')) {
-          // Handle mixed bold/italic text
-          const parts: TextRun[] = [];
-          let currentText = '';
-          let inBold = false;
-          let inItalic = false;
-          
-          for (let k = 0; k < line.length; k++) {
-            const char = line[k];
-            const nextChar = line[k + 1];
-            
-            if (char === '*' && nextChar === '*') {
-              // Bold marker
-              if (currentText) {
-                parts.push(new TextRun({
-                  text: currentText,
-                  bold: inBold,
-                  italics: inItalic,
-                }));
-                currentText = '';
-              }
-              inBold = !inBold;
-              k++; // Skip next *
-            } else if (char === '*' && !inBold) {
-              // Italic marker (only if not in bold)
-              if (currentText) {
-                parts.push(new TextRun({
-                  text: currentText,
-                  bold: inBold,
-                  italics: inItalic,
-                }));
-                currentText = '';
-              }
-              inItalic = !inItalic;
-            } else {
-              currentText += char;
-            }
-          }
-          
-          if (currentText) {
-            parts.push(new TextRun({
-              text: currentText,
-              bold: inBold,
-              italics: inItalic,
-            }));
-          }
-          
-          result.push(new Paragraph({
-            children: parts,
+          // Remove all markdown formatting and use clean text
+          const cleanText = cleanMarkdown(line);
+          result.push(createParagraph(cleanText, {
             spacing: { after: 0.3 },
             indent: { left: 0.5 },
           }));
         } else if (line.startsWith('- ') || line.startsWith('• ')) {
-          // List item
-          const text = line.replace(/^[-•]\s*/, '');
-          result.push(createParagraph(`• ${text}`, {
+          // List item - convert to "-" format
+          const text = cleanMarkdown(line.replace(/^[-•]\s*/, ''));
+          result.push(createParagraph(`- ${text}`, {
             spacing: { after: 0.2 },
             indent: { left: 1 },
           }));
@@ -543,8 +693,19 @@ export const downloadLessonPlan = async (
           // Separator
           result.push(createParagraph('', { spacing: { after: 1 } }));
         } else {
-          // Regular paragraph
-          result.push(createParagraph(line, {
+          // Regular paragraph - if it looks like an activity, add "-"
+          let cleanText = cleanMarkdown(line);
+          const trimmedText = cleanText.trim();
+          // If text doesn't start with "-", "•", number, or special characters, and is not empty
+          // Add "-" prefix for activities
+          if (trimmedText && 
+              !trimmedText.startsWith('-') && 
+              !trimmedText.startsWith('•') &&
+              !/^\d+\./.test(trimmedText) &&
+              !trimmedText.startsWith('|')) {
+            cleanText = `- ${trimmedText}`;
+          }
+          result.push(createParagraph(cleanText, {
             spacing: { after: 0.3 },
             indent: { left: 0.5 },
           }));
@@ -560,67 +721,63 @@ export const downloadLessonPlan = async (
     const parseTitle = (title: string): Paragraph => {
       if (!title) return createParagraph('', { spacing: { before: 1, after: 0.5 } });
       
-      if (title.includes('**')) {
-        const parts: TextRun[] = [];
-        let currentText = '';
-        let inBold = false;
-        
-        for (let k = 0; k < title.length; k++) {
-          const char = title[k];
-          const nextChar = title[k + 1];
-          
-          if (char === '*' && nextChar === '*') {
-            if (currentText) {
-              parts.push(new TextRun({
-                text: currentText,
-                bold: inBold,
-              }));
-              currentText = '';
-            }
-            inBold = !inBold;
-            k++;
-          } else {
-            currentText += char;
-          }
-        }
-        
-        if (currentText) {
-          parts.push(new TextRun({
-            text: currentText,
-            bold: inBold,
-          }));
-        }
-        
-        return new Paragraph({
-          children: parts,
-          heading: HeadingLevel.HEADING_2,
-          spacing: { before: 1, after: 0.5 },
-        });
-      }
+      // Clean markdown and ensure title is bold
+      const cleanTitle = cleanMarkdown(title);
       
-      return createParagraph(title, {
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: cleanTitle,
+            bold: true, // All titles are bold
+            size: 26, // 13pt = 26 half-points
+          }),
+        ],
         heading: HeadingLevel.HEADING_2,
-        bold: true,
         spacing: { before: 1, after: 0.5 },
       });
     };
 
-    // Add activities safely
+    // Add activities safely - only add activities that have content
     const activity1 = activities.activity1 || { title: '', content: '' };
     const activity2 = activities.activity2 || { title: '', content: '' };
     const activity3 = activities.activity3 || { title: '', content: '' };
     const activity4 = activities.activity4 || { title: '', content: '' };
 
-    children.push(
-      parseTitle(safeText(activity1.title) || 'Hoạt động 1'),
-      ...splitContentIntoParagraphs(safeText(activity1.content) || 'Chưa có nội dung'),
-      parseTitle(safeText(activity2.title) || 'Hoạt động 2'),
-      ...splitContentIntoParagraphs(safeText(activity2.content) || 'Chưa có nội dung'),
-      parseTitle(safeText(activity3.title) || 'Hoạt động 3'),
-      ...splitContentIntoParagraphs(safeText(activity3.content) || 'Chưa có nội dung'),
-      parseTitle(safeText(activity4.title) || 'Hoạt động 4'),
-      ...splitContentIntoParagraphs(safeText(activity4.content) || 'Chưa có nội dung')
-    );
+    // Helper function to check if activity has meaningful content
+    const hasContent = (activity: { title: string; content: string }): boolean => {
+      const content = safeText(activity.content);
+      const trimmedContent = content.trim();
+      return trimmedContent.length > 0 && trimmedContent !== 'Chưa có nội dung';
+    };
+
+    // Only add activities that have content
+    if (hasContent(activity1)) {
+      children.push(
+        parseTitle(safeText(activity1.title) || 'Hoạt động 1'),
+        ...splitContentIntoParagraphs(safeText(activity1.content))
+      );
+    }
+
+    if (hasContent(activity2)) {
+      children.push(
+        parseTitle(safeText(activity2.title) || 'Hoạt động 2'),
+        ...splitContentIntoParagraphs(safeText(activity2.content))
+      );
+    }
+
+    if (hasContent(activity3)) {
+      children.push(
+        parseTitle(safeText(activity3.title) || 'Hoạt động 3'),
+        ...splitContentIntoParagraphs(safeText(activity3.content))
+      );
+    }
+
+    if (hasContent(activity4)) {
+      children.push(
+        parseTitle(safeText(activity4.title) || 'Hoạt động 4'),
+        ...splitContentIntoParagraphs(safeText(activity4.content))
+      );
+    }
 
     // Add IV. ĐIỀU CHỈNH SAU BÀI DẠY if exists
     if (adjustment && (adjustment.nhanXet || (adjustment.huongDieuChinh && adjustment.huongDieuChinh.length > 0))) {
@@ -628,18 +785,15 @@ export const downloadLessonPlan = async (
         createParagraph('', { spacing: { after: 1 } }),
         createParagraph('IV. ĐIỀU CHỈNH SAU BÀI DẠY', {
           heading: HeadingLevel.HEADING_1,
+          bold: true,
           spacing: { before: 1, after: 1 },
         })
       );
 
       if (adjustment.nhanXet) {
         children.push(
-          createParagraph('Nhận xét chung:', {
-            bold: true,
-            spacing: { before: 0.5, after: 0.3 },
-          }),
           createParagraph(safeText(adjustment.nhanXet), {
-            spacing: { after: 0.5 },
+            spacing: { before: 0.5, after: 0.5 },
             indent: { left: 0.5 },
           })
         );
