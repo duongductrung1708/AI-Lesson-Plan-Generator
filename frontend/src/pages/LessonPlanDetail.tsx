@@ -36,6 +36,10 @@ interface LessonPlan {
       activity3: { title: string; content: string };
       activity4: { title: string; content: string };
     };
+    adjustment?: {
+      nhanXet: string;
+      huongDieuChinh: string[];
+    };
   };
   createdAt: string;
 }
@@ -108,6 +112,25 @@ const LessonPlanDetail = () => {
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <style>{`
+        table thead tr {
+          background: linear-gradient(to right, rgb(37, 99, 235), rgb(67, 56, 202)) !important;
+        }
+        table thead tr:hover {
+          background: linear-gradient(to right, rgb(29, 78, 216), rgb(55, 48, 163)) !important;
+        }
+        table thead th {
+          color: white !important;
+          background-color: transparent !important;
+        }
+        table thead th,
+        table thead th *,
+        table thead th span,
+        table thead th strong {
+          color: white !important;
+          -webkit-text-fill-color: white !important;
+        }
+      `}</style>
       <div className="max-w-5xl mx-auto">
         {/* Header Card */}
         <div className="p-6 mb-6 card md:p-8 animate-slide-up">
@@ -184,58 +207,43 @@ const LessonPlanDetail = () => {
                 <span className="font-bold text-white">I</span>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                MỤC TIÊU BÀI HỌC
+                YÊU CẦU CẦN ĐẠT
               </h2>
             </div>
 
             <div className="space-y-6">
               <div className="p-5 border-l-4 border-blue-500 bg-blue-50 rounded-xl">
                 <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
-                  <span className="mr-2">🎯</span>
-                  1. Kiến thức
+                  <span className="mr-2">💪</span>
+                  1. Năng lực đặc thù
                 </h3>
-                <p className="leading-relaxed text-gray-700 pl-7">
-                  {lessonPlan.content.objectives.knowledge}
-                </p>
+                <ul className="space-y-2 pl-7">
+                  {lessonPlan.content.objectives.competencies.specific.map(
+                    (comp, idx) => (
+                      <li key={idx} className="flex items-start space-x-2">
+                        <span className="mt-1 text-blue-500">-</span>
+                        <span className="text-gray-700">{comp}</span>
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
 
               <div className="p-5 border-l-4 border-indigo-500 bg-indigo-50 rounded-xl">
                 <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
                   <span className="mr-2">💪</span>
-                  2. Năng lực
+                  2. Năng lực chung
                 </h3>
-                <div className="space-y-4 pl-7">
-                  <div>
-                    <h4 className="mb-2 font-semibold text-gray-900">
-                      Năng lực chung:
-                    </h4>
-                    <ul className="space-y-2">
-                      {lessonPlan.content.objectives.competencies.general.map(
-                        (comp, idx) => (
-                          <li key={idx} className="flex items-start space-x-2">
-                            <span className="mt-1 text-green-500">✓</span>
-                            <span className="text-gray-700">{comp}</span>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="mb-2 font-semibold text-gray-900">
-                      Năng lực đặc thù:
-                    </h4>
-                    <ul className="space-y-2">
-                      {lessonPlan.content.objectives.competencies.specific.map(
-                        (comp, idx) => (
-                          <li key={idx} className="flex items-start space-x-2">
-                            <span className="mt-1 text-blue-500">✓</span>
-                            <span className="text-gray-700">{comp}</span>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                </div>
+                <ul className="space-y-2 pl-7">
+                  {lessonPlan.content.objectives.competencies.general.map(
+                    (comp, idx) => (
+                      <li key={idx} className="flex items-start space-x-2">
+                        <span className="mt-1 text-green-500">-</span>
+                        <span className="text-gray-700">{comp}</span>
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
 
               <div className="p-5 border-l-4 border-purple-500 bg-purple-50 rounded-xl">
@@ -247,7 +255,7 @@ const LessonPlanDetail = () => {
                   {lessonPlan.content.objectives.qualities.map(
                     (quality, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
-                        <span className="mt-1 text-purple-500">•</span>
+                        <span className="mt-1 text-purple-500">-</span>
                         <span className="text-gray-700">{quality}</span>
                       </li>
                     )
@@ -264,38 +272,22 @@ const LessonPlanDetail = () => {
                 <span className="font-bold text-white">II</span>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU
+                ĐỒ DÙNG DẠY HỌC
               </h2>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="p-5 border border-green-200 bg-green-50 rounded-xl">
-                <h3 className="flex items-center mb-4 font-bold text-gray-900">
-                  <span className="mr-2">👨‍🏫</span>
-                  Giáo viên
-                </h3>
-                <ul className="space-y-2">
-                  {lessonPlan.content.equipment.teacher.map((item, idx) => (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <span className="mt-1 text-green-500">•</span>
-                      <span className="text-gray-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+            <div className="space-y-4">
+              <div className="p-5 border-l-4 border-green-500 bg-green-50 rounded-xl">
+                <p className="text-gray-700">
+                  <span className="font-bold">- Giáo viên:</span>{' '}
+                  {lessonPlan.content.equipment.teacher.join(', ')}
+                </p>
               </div>
-              <div className="p-5 border bg-emerald-50 rounded-xl border-emerald-200">
-                <h3 className="flex items-center mb-4 font-bold text-gray-900">
-                  <span className="mr-2">👨‍🎓</span>
-                  Học sinh
-                </h3>
-                <ul className="space-y-2">
-                  {lessonPlan.content.equipment.student.map((item, idx) => (
-                    <li key={idx} className="flex items-start space-x-2">
-                      <span className="mt-1 text-emerald-500">•</span>
-                      <span className="text-gray-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="p-5 border-l-4 border-emerald-500 bg-emerald-50 rounded-xl">
+                <p className="text-gray-700">
+                  <span className="font-bold">- Học sinh:</span>{' '}
+                  {lessonPlan.content.equipment.student.join(', ')}
+                </p>
               </div>
             </div>
           </div>
@@ -342,28 +334,54 @@ const LessonPlanDetail = () => {
                   lessonPlan.content.activities[
                     key as keyof typeof lessonPlan.content.activities
                   ];
+                // Chỉ hiển thị activity nếu có nội dung (content là bắt buộc, title có thể rỗng)
+                if (!activity || !activity.content || activity.content.trim() === '') {
+                  return null;
+                }
+                
+                // Xác định title và icon dựa trên nội dung
+                let activityTitle: string;
+                let displayIcon = icon;
+                
+                if (activity.title && activity.title.trim()) {
+                  // Nếu title có chứa "TIẾT", dùng title đó và icon phù hợp
+                  if (activity.title.toUpperCase().includes('TIẾT')) {
+                    activityTitle = activity.title;
+                    // Icon cho tiết: 📚 hoặc 📖
+                    displayIcon = '📚';
+                  } else {
+                    activityTitle = activity.title;
+                  }
+                } else {
+                  // Nếu title rỗng, dùng title mặc định dựa trên key
+                  activityTitle = key === 'activity1' ? 'Hoạt động 1' 
+                    : key === 'activity2' ? 'Hoạt động 2'
+                    : key === 'activity3' ? 'Hoạt động 3'
+                    : 'Hoạt động 4';
+                }
+                
                 return (
                   <div
                     key={key}
                     className={`${bgClass} rounded-xl p-6 border-l-4 ${borderClass}`}
                   >
                     <h3 className="flex items-center mb-4 text-xl font-bold text-gray-900">
-                      <span className="mr-2">{icon}</span>
-                      {activity.title}
+                      <span className="mr-2">{displayIcon}</span>
+                      {activityTitle}
                     </h3>
                     <div className="prose max-w-none pl-7">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
                           table: ({ children }) => (
-                            <div className="overflow-x-auto my-4">
-                              <table className="min-w-full border-collapse border border-gray-300 bg-white shadow-sm">
+                            <div className="my-4 overflow-x-auto">
+                              <table className="min-w-full bg-white border border-collapse border-gray-300 shadow-sm">
                                 {children}
                               </table>
                             </div>
                           ),
                           thead: ({ children }) => (
-                            <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                            <thead className="bg-gradient-to-r from-blue-600 to-indigo-700">
                               {children}
                             </thead>
                           ),
@@ -373,17 +391,23 @@ const LessonPlanDetail = () => {
                             </tbody>
                           ),
                           tr: ({ children }) => (
-                            <tr className="hover:bg-gray-50 transition-colors">
+                            <tr className="transition-colors hover:bg-gray-50">
                               {children}
                             </tr>
                           ),
                           th: ({ children }) => (
-                            <th className="px-4 py-3 text-left font-bold text-sm border border-gray-300">
-                              {children}
+                            <th 
+                              className="px-4 py-3 text-sm font-bold text-left border border-gray-300" 
+                              style={{ 
+                                color: 'white',
+                                backgroundColor: 'transparent'
+                              }}
+                            >
+                              <span style={{ color: 'white' }}>{children}</span>
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="px-4 py-3 text-sm text-gray-700 border border-gray-300 align-top">
+                            <td className="px-4 py-3 text-sm text-gray-700 align-top border border-gray-300">
                               {children}
                             </td>
                           ),
@@ -406,6 +430,51 @@ const LessonPlanDetail = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Adjustment Section - IV. ĐIỀU CHỈNH SAU BÀI DẠY */}
+          <div className="p-6 card md:p-8 animate-slide-up">
+            <div className="flex items-center mb-6 space-x-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600">
+                <span className="font-bold text-white">IV</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                ĐIỀU CHỈNH SAU BÀI DẠY
+              </h2>
+            </div>
+
+            <div className="space-y-6">
+              <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
+                <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+                  <span className="mr-2">📝</span>
+                  Nhận xét chung
+                </h3>
+                <p className="leading-relaxed text-gray-700 whitespace-pre-line pl-7">
+                  {lessonPlan.content.adjustment?.nhanXet && lessonPlan.content.adjustment.nhanXet.trim() 
+                    ? lessonPlan.content.adjustment.nhanXet 
+                    : '(Chưa có nhận xét)'}
+                </p>
+              </div>
+              {lessonPlan.content.adjustment?.huongDieuChinh && 
+               lessonPlan.content.adjustment.huongDieuChinh.length > 0 && (
+                <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
+                  <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+                    <span className="mr-2">🔧</span>
+                    Hướng điều chỉnh
+                  </h3>
+                  <ul className="space-y-2 pl-7">
+                    {lessonPlan.content.adjustment.huongDieuChinh.map(
+                      (item, idx) => (
+                        <li key={idx} className="flex items-start space-x-2">
+                          <span className="mt-1 text-gray-500">-</span>
+                          <span className="text-gray-700">{item}</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

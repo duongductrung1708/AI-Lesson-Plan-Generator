@@ -5,7 +5,7 @@ import User from '../models/User.model';
 import Subscription from '../models/Subscription.model';
 import { generateLessonPlan } from '../services/ai.service';
 import { deleteFiles } from '../services/file.service';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Spacing, Indent } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Spacing, Indent, Table, TableRow, TableCell, WidthType } from 'docx';
 
 const getCurrentMonth = (): string => {
   const now = new Date();
@@ -276,6 +276,7 @@ export const downloadLessonPlan = async (
     const competencies = objectives.competencies || { general: [], specific: [] };
     const equipment = content.equipment || { teacher: [], student: [] };
     const activities = content.activities || {};
+    const adjustment = content.adjustment || { nhanXet: '', huongDieuChinh: [] };
 
     // Helper function to create formatted paragraph with spacing
     const createParagraph = (text: string, options?: {
@@ -302,8 +303,8 @@ export const downloadLessonPlan = async (
       });
     };
 
-    // Build document children
-    const children: Paragraph[] = [
+    // Build document children (can be Paragraph or Table)
+    const children: (Paragraph | Table)[] = [
       createParagraph('GIÁO ÁN', {
         heading: HeadingLevel.TITLE,
         spacing: { after: 2 },
@@ -324,140 +325,284 @@ export const downloadLessonPlan = async (
         spacing: { after: 2 },
       }),
       createParagraph('', { spacing: { after: 1 } }),
-      createParagraph('I. MỤC TIÊU BÀI HỌC', {
+      createParagraph('I. YÊU CẦU CẦN ĐẠT', {
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 1, after: 1 },
       }),
-      createParagraph('1. Kiến thức:', {
+      createParagraph('1. Năng lực đặc thù', {
         heading: HeadingLevel.HEADING_2,
         bold: true,
         spacing: { before: 0.5, after: 0.5 },
-      }),
-      createParagraph(safeText(objectives.knowledge) || 'Chưa có thông tin', {
-        spacing: { after: 1 },
-        indent: { left: 0.5 },
-      }),
-      createParagraph('2. Năng lực:', {
-        heading: HeadingLevel.HEADING_2,
-        bold: true,
-        spacing: { before: 0.5, after: 0.5 },
-      }),
-      createParagraph('Năng lực chung:', {
-        bold: true,
-        spacing: { after: 0.3 },
-        indent: { left: 0.5 },
-      }),
-      ...safeArray(competencies.general).map(
-        (comp) =>
-          createParagraph(`• ${comp}`, {
-            spacing: { after: 0.2 },
-            indent: { left: 1 },
-          })
-      ),
-      createParagraph('Năng lực đặc thù:', {
-        bold: true,
-        spacing: { before: 0.5, after: 0.3 },
-        indent: { left: 0.5 },
       }),
       ...safeArray(competencies.specific).map(
         (comp) =>
-          createParagraph(`• ${comp}`, {
+          createParagraph(comp.startsWith('-') ? comp : `- ${comp}`, {
             spacing: { after: 0.2 },
-            indent: { left: 1 },
+            indent: { left: 0.5 },
           })
       ),
-      createParagraph('3. Phẩm chất:', {
+      createParagraph('2. Năng lực chung', {
+        heading: HeadingLevel.HEADING_2,
+        bold: true,
+        spacing: { before: 0.5, after: 0.5 },
+      }),
+      ...safeArray(competencies.general).map(
+        (comp) =>
+          createParagraph(comp.startsWith('-') ? comp : `- ${comp}`, {
+            spacing: { after: 0.2 },
+            indent: { left: 0.5 },
+          })
+      ),
+      createParagraph('3. Phẩm chất', {
         heading: HeadingLevel.HEADING_2,
         bold: true,
         spacing: { before: 0.5, after: 0.5 },
       }),
       ...safeArray(objectives.qualities).map(
         (quality) =>
-          createParagraph(`• ${quality}`, {
+          createParagraph(quality.startsWith('-') ? quality : `- ${quality}`, {
             spacing: { after: 0.2 },
             indent: { left: 0.5 },
           })
       ),
       createParagraph('', { spacing: { after: 1 } }),
-      createParagraph('II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU', {
+      createParagraph('II. ĐỒ DÙNG DẠY HỌC', {
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 1, after: 1 },
       }),
-      createParagraph('Giáo viên:', {
-        bold: true,
-        spacing: { after: 0.3 },
+      createParagraph(`- Giáo viên: ${safeArray(equipment.teacher).join(', ')}`, {
+        spacing: { after: 0.5 },
       }),
-      ...safeArray(equipment.teacher).map(
-        (item) =>
-          createParagraph(`• ${item}`, {
-            spacing: { after: 0.2 },
-            indent: { left: 0.5 },
-          })
-      ),
-      createParagraph('Học sinh:', {
-        bold: true,
-        spacing: { before: 0.5, after: 0.3 },
+      createParagraph(`- Học sinh: ${safeArray(equipment.student).join(', ')}`, {
+        spacing: { after: 0.5 },
       }),
-      ...safeArray(equipment.student).map(
-        (item) =>
-          createParagraph(`• ${item}`, {
-            spacing: { after: 0.2 },
-            indent: { left: 0.5 },
-          })
-      ),
       createParagraph('', { spacing: { after: 1 } }),
-      createParagraph('III. TIẾN TRÌNH DẠY HỌC', {
+      createParagraph('III. CÁC HOẠT ĐỘNG DẠY HỌC', {
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 1, after: 1 },
       }),
     ];
 
-    // Helper function to split markdown content into paragraphs
-    const splitContentIntoParagraphs = (content: string): Paragraph[] => {
+    // Helper function to parse markdown table
+    const parseMarkdownTable = (tableLines: string[]): Table | null => {
+      if (tableLines.length < 2) return null;
+      
+      const rows: TableRow[] = [];
+      
+      for (let i = 0; i < tableLines.length; i++) {
+        const line = tableLines[i].trim();
+        if (!line || line.startsWith('|---')) continue; // Skip separator line
+        
+        const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+        if (cells.length === 0) continue;
+        
+        const tableCells = cells.map(cell => {
+          // Remove markdown bold (**text**)
+          const cleanText = cell.replace(/\*\*/g, '');
+          const isBold = cell.includes('**');
+          
+          return new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: cleanText,
+                    bold: isBold,
+                  }),
+                ],
+              }),
+            ],
+            margins: {
+              top: 100,
+              bottom: 100,
+              left: 100,
+              right: 100,
+            },
+          });
+        });
+        
+        rows.push(new TableRow({
+          children: tableCells,
+        }));
+      }
+      
+      if (rows.length === 0) return null;
+      
+      return new Table({
+        rows,
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+      });
+    };
+
+    // Helper function to split markdown content into paragraphs and tables
+    const splitContentIntoParagraphs = (content: string): (Paragraph | Table)[] => {
       if (!content) return [];
       
-      const lines = content.split('\n').filter(line => line.trim());
-      const paragraphs: Paragraph[] = [];
+      const lines = content.split('\n');
+      const result: (Paragraph | Table)[] = [];
+      let i = 0;
       
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
+      while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        if (!line) {
+          i++;
+          continue;
+        }
+        
+        // Check if it's a markdown table (starts with |)
+        if (line.startsWith('|')) {
+          const tableLines: string[] = [];
+          let j = i;
+          
+          // Collect all table lines
+          while (j < lines.length && (lines[j].trim().startsWith('|') || lines[j].trim().startsWith('---'))) {
+            tableLines.push(lines[j]);
+            j++;
+          }
+          
+          const table = parseMarkdownTable(tableLines);
+          if (table) {
+            result.push(table);
+            result.push(createParagraph('', { spacing: { after: 0.5 } })); // Add spacing after table
+            i = j;
+            continue;
+          }
+        }
         
         // Check if it's a heading (starts with ## or **)
-        if (trimmed.startsWith('##') || (trimmed.startsWith('**') && trimmed.endsWith('**'))) {
-          const text = trimmed.replace(/^##+\s*/, '').replace(/\*\*/g, '');
-          paragraphs.push(createParagraph(text, {
+        if (line.startsWith('##') || (line.startsWith('**') && line.endsWith('**'))) {
+          const text = line.replace(/^##+\s*/, '').replace(/\*\*/g, '');
+          result.push(createParagraph(text, {
             bold: true,
             spacing: { before: 0.5, after: 0.3 },
           }));
-        } else if (trimmed.startsWith('**') && trimmed.includes('**')) {
-          // Bold text
-          const text = trimmed.replace(/\*\*/g, '');
-          paragraphs.push(createParagraph(text, {
-            bold: true,
+        } else if (line.includes('**') || line.includes('*')) {
+          // Handle mixed bold/italic text
+          const parts: TextRun[] = [];
+          let currentText = '';
+          let inBold = false;
+          let inItalic = false;
+          
+          for (let k = 0; k < line.length; k++) {
+            const char = line[k];
+            const nextChar = line[k + 1];
+            
+            if (char === '*' && nextChar === '*') {
+              // Bold marker
+              if (currentText) {
+                parts.push(new TextRun({
+                  text: currentText,
+                  bold: inBold,
+                  italics: inItalic,
+                }));
+                currentText = '';
+              }
+              inBold = !inBold;
+              k++; // Skip next *
+            } else if (char === '*' && !inBold) {
+              // Italic marker (only if not in bold)
+              if (currentText) {
+                parts.push(new TextRun({
+                  text: currentText,
+                  bold: inBold,
+                  italics: inItalic,
+                }));
+                currentText = '';
+              }
+              inItalic = !inItalic;
+            } else {
+              currentText += char;
+            }
+          }
+          
+          if (currentText) {
+            parts.push(new TextRun({
+              text: currentText,
+              bold: inBold,
+              italics: inItalic,
+            }));
+          }
+          
+          result.push(new Paragraph({
+            children: parts,
             spacing: { after: 0.3 },
             indent: { left: 0.5 },
           }));
-        } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        } else if (line.startsWith('- ') || line.startsWith('• ')) {
           // List item
-          const text = trimmed.replace(/^[-•]\s*/, '');
-          paragraphs.push(createParagraph(`• ${text}`, {
+          const text = line.replace(/^[-•]\s*/, '');
+          result.push(createParagraph(`• ${text}`, {
             spacing: { after: 0.2 },
             indent: { left: 1 },
           }));
-        } else if (trimmed.startsWith('---')) {
+        } else if (line.startsWith('---')) {
           // Separator
-          paragraphs.push(createParagraph('', { spacing: { after: 1 } }));
+          result.push(createParagraph('', { spacing: { after: 1 } }));
         } else {
           // Regular paragraph
-          paragraphs.push(createParagraph(trimmed, {
+          result.push(createParagraph(line, {
             spacing: { after: 0.3 },
             indent: { left: 0.5 },
           }));
         }
+        
+        i++;
       }
       
-      return paragraphs;
+      return result;
+    };
+
+    // Helper function to parse title with markdown
+    const parseTitle = (title: string): Paragraph => {
+      if (!title) return createParagraph('', { spacing: { before: 1, after: 0.5 } });
+      
+      if (title.includes('**')) {
+        const parts: TextRun[] = [];
+        let currentText = '';
+        let inBold = false;
+        
+        for (let k = 0; k < title.length; k++) {
+          const char = title[k];
+          const nextChar = title[k + 1];
+          
+          if (char === '*' && nextChar === '*') {
+            if (currentText) {
+              parts.push(new TextRun({
+                text: currentText,
+                bold: inBold,
+              }));
+              currentText = '';
+            }
+            inBold = !inBold;
+            k++;
+          } else {
+            currentText += char;
+          }
+        }
+        
+        if (currentText) {
+          parts.push(new TextRun({
+            text: currentText,
+            bold: inBold,
+          }));
+        }
+        
+        return new Paragraph({
+          children: parts,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 1, after: 0.5 },
+        });
+      }
+      
+      return createParagraph(title, {
+        heading: HeadingLevel.HEADING_2,
+        bold: true,
+        spacing: { before: 1, after: 0.5 },
+      });
     };
 
     // Add activities safely
@@ -467,31 +612,39 @@ export const downloadLessonPlan = async (
     const activity4 = activities.activity4 || { title: '', content: '' };
 
     children.push(
-      createParagraph(safeText(activity1.title) || 'Hoạt động 1', {
-        heading: HeadingLevel.HEADING_2,
-        bold: true,
-        spacing: { before: 1, after: 0.5 },
-      }),
+      parseTitle(safeText(activity1.title) || 'Hoạt động 1'),
       ...splitContentIntoParagraphs(safeText(activity1.content) || 'Chưa có nội dung'),
-      createParagraph(safeText(activity2.title) || 'Hoạt động 2', {
-        heading: HeadingLevel.HEADING_2,
-        bold: true,
-        spacing: { before: 1, after: 0.5 },
-      }),
+      parseTitle(safeText(activity2.title) || 'Hoạt động 2'),
       ...splitContentIntoParagraphs(safeText(activity2.content) || 'Chưa có nội dung'),
-      createParagraph(safeText(activity3.title) || 'Hoạt động 3', {
-        heading: HeadingLevel.HEADING_2,
-        bold: true,
-        spacing: { before: 1, after: 0.5 },
-      }),
+      parseTitle(safeText(activity3.title) || 'Hoạt động 3'),
       ...splitContentIntoParagraphs(safeText(activity3.content) || 'Chưa có nội dung'),
-      createParagraph(safeText(activity4.title) || 'Hoạt động 4', {
-        heading: HeadingLevel.HEADING_2,
-        bold: true,
-        spacing: { before: 1, after: 0.5 },
-      }),
+      parseTitle(safeText(activity4.title) || 'Hoạt động 4'),
       ...splitContentIntoParagraphs(safeText(activity4.content) || 'Chưa có nội dung')
     );
+
+    // Add IV. ĐIỀU CHỈNH SAU BÀI DẠY if exists
+    if (adjustment && (adjustment.nhanXet || (adjustment.huongDieuChinh && adjustment.huongDieuChinh.length > 0))) {
+      children.push(
+        createParagraph('', { spacing: { after: 1 } }),
+        createParagraph('IV. ĐIỀU CHỈNH SAU BÀI DẠY', {
+          heading: HeadingLevel.HEADING_1,
+          spacing: { before: 1, after: 1 },
+        })
+      );
+
+      if (adjustment.nhanXet) {
+        children.push(
+          createParagraph('Nhận xét chung:', {
+            bold: true,
+            spacing: { before: 0.5, after: 0.3 },
+          }),
+          createParagraph(safeText(adjustment.nhanXet), {
+            spacing: { after: 0.5 },
+            indent: { left: 0.5 },
+          })
+        );
+      }
+    }
 
     // Create DOCX document
     const doc = new Document({

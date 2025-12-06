@@ -29,6 +29,10 @@ export interface ILessonPlan extends Document {
       activity3: { title: string; content: string };
       activity4: { title: string; content: string };
     };
+    adjustment?: {
+      nhanXet: string;
+      huongDieuChinh: string[];
+    };
   };
   createdAt: Date;
   updatedAt: Date;
@@ -93,6 +97,10 @@ const LessonPlanSchema: Schema = new Schema(
         activity2: { title: String, content: String },
         activity3: { title: String, content: String },
         activity4: { title: String, content: String },
+      },
+      adjustment: {
+        nhanXet: { type: String, default: '' },
+        huongDieuChinh: { type: [String], default: [] },
       },
     },
   },
