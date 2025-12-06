@@ -1017,7 +1017,8 @@ const AdminDashboard = () => {
               <Paper
                 sx={{
                   p: 2,
-                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  background:
+                    "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                   color: "white",
                 }}
               >
@@ -1035,7 +1036,8 @@ const AdminDashboard = () => {
               <Paper
                 sx={{
                   p: 2,
-                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                   color: "white",
                 }}
               >
@@ -1053,7 +1055,8 @@ const AdminDashboard = () => {
               <Paper
                 sx={{
                   p: 2,
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  background:
+                    "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                   color: "white",
                 }}
               >
@@ -1071,7 +1074,8 @@ const AdminDashboard = () => {
               <Paper
                 sx={{
                   p: 2,
-                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  background:
+                    "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
                   color: "white",
                 }}
               >
@@ -1163,8 +1167,7 @@ const AdminDashboard = () => {
                         height: "100%",
                         bgcolor: "primary.main",
                         width: `${
-                          ((revenue as number) /
-                            paymentStats.totalRevenue) *
+                          ((revenue as number) / paymentStats.totalRevenue) *
                           100
                         }%`,
                         transition: "width 0.3s ease",
@@ -1206,7 +1209,10 @@ const AdminDashboard = () => {
                             <Typography variant="body2" fontWeight="medium">
                               {tx.userName}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {tx.userEmail}
                             </Typography>
                           </Box>
@@ -1235,9 +1241,9 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
-                          sx={{
-                            color: "white",
-                          }}
+                            sx={{
+                              color: "white",
+                            }}
                             label={
                               tx.status === "active"
                                 ? "Đang hoạt động"

@@ -98,5 +98,3 @@ const KeyboardShortcutHandler = () => {
 };
 
 export default KeyboardShortcutHandler;
-
-

@@ -106,7 +106,7 @@ const HelpCenter = () => {
         </Button>
       </Stack>
       <Typography variant="h3" fontWeight="bold" gutterBottom>
-        Help Center
+        Trung tâm trợ giúp
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Tài liệu và hướng dẫn để giúp bạn khai thác tối đa AI Lesson Plan

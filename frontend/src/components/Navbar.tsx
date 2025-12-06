@@ -137,22 +137,22 @@ ${bugForm.description.trim()}`;
 
   const helpLinks = [
     {
-      label: "Help center",
+      label: "Trung tâm trợ giúp",
       icon: <HelpOutlineIcon sx={{ mr: 2, fontSize: 20 }} />,
       to: "/help-center",
     },
     {
-      label: "Release notes",
+      label: "Ghi chú phiên bản",
       icon: <AutoStoriesIcon sx={{ mr: 2, fontSize: 20 }} />,
       to: "/release-notes",
     },
     {
-      label: "Terms & policies",
+      label: "Điều khoản & Chính sách",
       icon: <GavelIcon sx={{ mr: 2, fontSize: 20 }} />,
       to: "/terms-policies",
     },
     {
-      label: "Keyboard shortcuts",
+      label: "Phím tắt bàn phím",
       icon: <KeyboardAltIcon sx={{ mr: 2, fontSize: 20 }} />,
       to: "/keyboard-shortcuts",
     },
@@ -291,7 +291,7 @@ ${bugForm.description.trim()}`;
                     },
                   }}
                 >
-                  Help
+                  Trợ giúp
                 </Button>
                 <Box
                   sx={{
@@ -352,7 +352,7 @@ ${bugForm.description.trim()}`;
                   startIcon={<HelpOutlineIcon />}
                   sx={{ color: "text.primary" }}
                 >
-                  Help
+                  Trợ giúp
                 </Button>
                 <Button
                   component={Link}
@@ -424,7 +424,7 @@ ${bugForm.description.trim()}`;
             }}
           >
             <PersonIcon sx={{ mr: 2, fontSize: 20 }} />
-            <Typography variant="body2">Profile</Typography>
+            <Typography variant="body2">Hồ sơ</Typography>
           </MenuItem>
           <MenuItem
             component={Link}
@@ -438,7 +438,7 @@ ${bugForm.description.trim()}`;
             }}
           >
             <CreditCardIcon sx={{ mr: 2, fontSize: 20 }} />
-            <Typography variant="body2">Billing</Typography>
+            <Typography variant="body2">Thanh toán</Typography>
           </MenuItem>
           <Divider />
           <MenuItem
@@ -476,7 +476,7 @@ ${bugForm.description.trim()}`;
         >
           <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
             <Typography variant="overline" color="text.secondary">
-              Help
+              Trợ giúp
             </Typography>
           </Box>
           {helpLinks.map((item) => (
@@ -510,7 +510,7 @@ ${bugForm.description.trim()}`;
             }}
           >
             <BugReportIcon sx={{ mr: 2, fontSize: 20 }} />
-            <Typography variant="body2">Report Bug</Typography>
+            <Typography variant="body2">Báo cáo lỗi</Typography>
           </MenuItem>
         </Menu>
 
@@ -638,7 +638,7 @@ ${bugForm.description.trim()}`;
                       }}
                     >
                       <PersonIcon sx={{ mr: 2 }} />
-                      <ListItemText primary="Profile" />
+                      <ListItemText primary="Hồ sơ" />
                     </ListItemButton>
                   </ListItem>
                   <ListItem disablePadding>
@@ -660,7 +660,7 @@ ${bugForm.description.trim()}`;
                       }}
                     >
                       <CreditCardIcon sx={{ mr: 2 }} />
-                      <ListItemText primary="Billing" />
+                      <ListItemText primary="Thanh toán" />
                     </ListItemButton>
                   </ListItem>
                   <Divider sx={{ my: 1 }} />
@@ -674,7 +674,7 @@ ${bugForm.description.trim()}`;
                 <Divider sx={{ my: 2 }} />
                 <Box sx={{ px: 2, pb: 1 }}>
                   <Typography variant="overline" color="text.secondary">
-                    Help
+                    Trợ giúp
                   </Typography>
                 </Box>
                 <List>
@@ -696,7 +696,7 @@ ${bugForm.description.trim()}`;
                         handleReportBugOpen();
                       }}
                     >
-                      <ListItemText primary="Report Bug" />
+                      <ListItemText primary="Báo cáo lỗi" />
                     </ListItemButton>
                   </ListItem>
                 </List>
@@ -724,7 +724,7 @@ ${bugForm.description.trim()}`;
                 <Divider sx={{ my: 2 }} />
                 <Box sx={{ px: 2, pb: 1 }}>
                   <Typography variant="overline" color="text.secondary">
-                    Help
+                    Trợ giúp
                   </Typography>
                 </Box>
                 {helpLinks.map((item) => (
@@ -745,7 +745,7 @@ ${bugForm.description.trim()}`;
                       handleReportBugOpen();
                     }}
                   >
-                    <ListItemText primary="Report Bug" />
+                    <ListItemText primary="Báo cáo lỗi" />
                   </ListItemButton>
                 </ListItem>
               </List>

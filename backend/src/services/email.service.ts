@@ -1,9 +1,9 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT || "587"),
     secure: false, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
@@ -18,12 +18,14 @@ export const sendActivationEmail = async (
   activationToken: string
 ): Promise<void> => {
   const transporter = createTransporter();
-  const activationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/activate/${activationToken}`;
+  const activationUrl = `${
+    process.env.FRONTEND_URL || "http://localhost:3000"
+  }/activate/${activationToken}`;
 
   const mailOptions = {
     from: `"AI Lesson Plan Generator" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: 'Kích hoạt tài khoản - AI Lesson Plan Generator',
+    subject: "Kích hoạt tài khoản - AI Lesson Plan Generator",
     html: `
       <!DOCTYPE html>
       <html>
@@ -112,8 +114,8 @@ export const sendActivationEmail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending email:', error);
-    throw new Error('Không thể gửi email kích hoạt');
+    console.error("Error sending email:", error);
+    throw new Error("Không thể gửi email kích hoạt");
   }
 };
 
@@ -127,7 +129,7 @@ export const sendOTPEmail = async (
   const mailOptions = {
     from: `"AI Lesson Plan Generator" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: 'Mã OTP đặt lại mật khẩu - AI Lesson Plan Generator',
+    subject: "Mã OTP đặt lại mật khẩu - AI Lesson Plan Generator",
     html: `
       <!DOCTYPE html>
       <html>
@@ -234,8 +236,7 @@ export const sendOTPEmail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    throw new Error('Không thể gửi email OTP');
+    console.error("Error sending OTP email:", error);
+    throw new Error("Không thể gửi email OTP");
   }
 };
-

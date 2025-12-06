@@ -76,7 +76,7 @@ const TermsPolicies = () => {
         </Button>
       </Stack>
       <Typography variant="h3" fontWeight="bold" gutterBottom>
-        Terms & Policies
+        Điều khoản & Chính sách
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Các chính sách sử dụng dịch vụ AI Lesson Plan Generator.

@@ -1,7 +1,7 @@
-import { Response, Request } from 'express';
-import crypto from 'crypto';
-import { AuthRequest } from '../middleware/auth.middleware';
-import Subscription from '../models/Subscription.model';
+import { Response, Request } from "express";
+import crypto from "crypto";
+import { AuthRequest } from "../middleware/auth.middleware";
+import Subscription from "../models/Subscription.model";
 
 export const PLAN_PRICING: Record<number, number> = {
   1: 99000,
@@ -13,7 +13,7 @@ const activateSubscriptionForUser = async (
   userId: string,
   duration: number,
   paymentMethod: string,
-  paymentStatus: 'pending' | 'paid' | 'failed'
+  paymentStatus: "pending" | "paid" | "failed"
 ) => {
   let subscription = await Subscription.findOne({ userId });
   const now = new Date();
@@ -26,8 +26,8 @@ const activateSubscriptionForUser = async (
 
   if (subscription) {
     const isActive =
-      subscription.status === 'active' &&
-      subscription.paymentStatus === 'paid' &&
+      subscription.status === "active" &&
+      subscription.paymentStatus === "paid" &&
       subscription.endDate > now;
 
     // If current sub is active, extend from existing endDate; else reset from now
@@ -35,7 +35,7 @@ const activateSubscriptionForUser = async (
     const baseEndDate = isActive ? subscription.endDate : now;
 
     subscription.duration = duration as 1 | 6 | 12;
-    subscription.status = paymentStatus === 'paid' ? 'active' : 'expired';
+    subscription.status = paymentStatus === "paid" ? "active" : "expired";
     subscription.startDate = newStartDate;
     subscription.endDate = addMonths(baseEndDate, duration);
     subscription.paymentMethod = paymentMethod;
@@ -46,7 +46,7 @@ const activateSubscriptionForUser = async (
     subscription = await Subscription.create({
       userId,
       duration,
-      status: paymentStatus === 'paid' ? 'active' : 'expired',
+      status: paymentStatus === "paid" ? "active" : "expired",
       startDate: now,
       endDate,
       paymentMethod,
@@ -69,7 +69,7 @@ export const getPricing = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thông tin giá',
+      message: "Lỗi khi lấy thông tin giá",
       error: error.message,
     });
   }
@@ -81,7 +81,9 @@ export const getSubscription = async (
 ): Promise<void> => {
   try {
     const authReq = req as AuthRequest;
-    const subscription = await Subscription.findOne({ userId: authReq.user!._id });
+    const subscription = await Subscription.findOne({
+      userId: authReq.user!._id,
+    });
 
     // If no subscription, return free plan
     if (!subscription) {
@@ -90,11 +92,11 @@ export const getSubscription = async (
         data: {
           _id: null,
           duration: null,
-          plan: 'free',
-          status: 'expired',
+          plan: "free",
+          status: "expired",
           startDate: new Date(),
           endDate: new Date(),
-          paymentStatus: 'pending',
+          paymentStatus: "pending",
           isActive: false,
         },
       });
@@ -103,13 +105,13 @@ export const getSubscription = async (
 
     // Check if subscription is still active
     const isActive =
-      subscription.status === 'active' &&
-      subscription.paymentStatus === 'paid' &&
+      subscription.status === "active" &&
+      subscription.paymentStatus === "paid" &&
       new Date() <= subscription.endDate;
 
     // Update status if expired
-    if (!isActive && subscription.status === 'active') {
-      subscription.status = 'expired';
+    if (!isActive && subscription.status === "active") {
+      subscription.status = "expired";
       await subscription.save();
     }
 
@@ -131,7 +133,7 @@ export const getSubscription = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thông tin subscription',
+      message: "Lỗi khi lấy thông tin subscription",
       error: error.message,
     });
   }
@@ -148,7 +150,7 @@ export const createSubscription = async (
     if (!duration || ![1, 6, 12].includes(duration)) {
       res.status(400).json({
         success: false,
-        message: 'Thời gian không hợp lệ. Chọn 1, 6 hoặc 12 tháng',
+        message: "Thời gian không hợp lệ. Chọn 1, 6 hoặc 12 tháng",
       });
       return;
     }
@@ -156,19 +158,19 @@ export const createSubscription = async (
     const subscription = await activateSubscriptionForUser(
       authReq.user!._id.toString(),
       duration,
-      paymentMethod || 'manual',
-      'paid'
+      paymentMethod || "manual",
+      "paid"
     );
 
     res.json({
       success: true,
-      message: 'Đăng ký gói thành công',
+      message: "Đăng ký gói thành công",
       data: subscription,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi tạo subscription',
+      message: "Lỗi khi tạo subscription",
       error: error.message,
     });
   }
@@ -185,7 +187,7 @@ export const createMomoPayment = async (
     if (!duration || ![1, 6, 12].includes(duration)) {
       res.status(400).json({
         success: false,
-        message: 'Thời gian không hợp lệ. Chọn 1, 6 hoặc 12 tháng',
+        message: "Thời gian không hợp lệ. Chọn 1, 6 hoặc 12 tháng",
       });
       return;
     }
@@ -194,48 +196,52 @@ export const createMomoPayment = async (
     if (!amount) {
       res.status(400).json({
         success: false,
-        message: 'Không tìm thấy giá cho gói này.',
+        message: "Không tìm thấy giá cho gói này.",
       });
       return;
     }
 
-    const partnerCode = process.env.MOMO_PARTNER_CODE || '';
-    const accessKey = process.env.MOMO_ACCESS_KEY || '';
-    const secretKey = process.env.MOMO_SECRET_KEY || '';
+    const partnerCode = process.env.MOMO_PARTNER_CODE || "";
+    const accessKey = process.env.MOMO_ACCESS_KEY || "";
+    const secretKey = process.env.MOMO_SECRET_KEY || "";
     const endpoint =
       process.env.MOMO_ENDPOINT ||
-      'https://test-payment.momo.vn/v2/gateway/api/create';
+      "https://test-payment.momo.vn/v2/gateway/api/create";
 
     if (!partnerCode || !accessKey || !secretKey) {
       res.status(500).json({
         success: false,
         message:
-          'Thiếu cấu hình MoMo. Vui lòng thiết lập MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY.',
+          "Thiếu cấu hình MoMo. Vui lòng thiết lập MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY.",
       });
       return;
     }
 
     const orderId = `${partnerCode}-${Date.now()}`;
     const requestId = orderId;
-    const orderInfo = `Thanh toán gói ${duration} tháng cho user ${authReq.user!.email}`;
+    const orderInfo = `Thanh toán gói ${duration} tháng cho user ${
+      authReq.user!.email
+    }`;
     const redirectUrl =
       process.env.MOMO_RETURN_URL ||
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`;
+      `${process.env.FRONTEND_URL || "http://localhost:3000"}/billing`;
     const ipnUrl =
       process.env.MOMO_IPN_URL ||
-      `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/billing/momo-ipn`;
+      `${
+        process.env.BACKEND_URL || "http://localhost:5000"
+      }/api/billing/momo-ipn`;
     const extraData = Buffer.from(
       JSON.stringify({
         userId: authReq.user!._id.toString(),
         duration,
       }),
-      'utf8'
-    ).toString('base64');
+      "utf8"
+    ).toString("base64");
 
     // Use payWithMethod to show all payment options (ATM, Credit Card, Wallet)
     // captureWallet only shows QR code for MoMo Wallet
     // payWithATM only shows ATM option
-    const requestType = 'payWithMethod';
+    const requestType = "payWithMethod";
     const rawSignature = [
       `accessKey=${accessKey}`,
       `amount=${amount}`,
@@ -247,12 +253,12 @@ export const createMomoPayment = async (
       `redirectUrl=${redirectUrl}`,
       `requestId=${requestId}`,
       `requestType=${requestType}`,
-    ].join('&');
+    ].join("&");
 
     const signature = crypto
-      .createHmac('sha256', secretKey)
+      .createHmac("sha256", secretKey)
       .update(rawSignature)
-      .digest('hex');
+      .digest("hex");
 
     const payload = {
       partnerCode,
@@ -264,14 +270,14 @@ export const createMomoPayment = async (
       ipnUrl,
       extraData,
       requestType,
-      lang: 'vi',
+      lang: "vi",
       signature,
     };
 
     const resp = await fetch(endpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
@@ -279,20 +285,20 @@ export const createMomoPayment = async (
     const data = (await resp.json()) as any;
 
     // Log payment creation for debugging
-    console.log('=== MoMo Payment Created ===');
-    console.log('Order ID:', orderId);
-    console.log('Amount:', amount);
-    console.log('Duration:', duration, 'months');
-    console.log('User:', authReq.user!.email);
-    console.log('Result Code:', data.resultCode);
-    console.log('Pay URL:', data.payUrl);
-    console.log('============================');
+    console.log("=== MoMo Payment Created ===");
+    console.log("Order ID:", orderId);
+    console.log("Amount:", amount);
+    console.log("Duration:", duration, "months");
+    console.log("User:", authReq.user!.email);
+    console.log("Result Code:", data.resultCode);
+    console.log("Pay URL:", data.payUrl);
+    console.log("============================");
 
     if (data.resultCode !== 0) {
-      console.error('❌ Failed to create MoMo payment:', data.message);
+      console.error("❌ Failed to create MoMo payment:", data.message);
       res.status(400).json({
         success: false,
-        message: data.message || 'Không tạo được phiên thanh toán MoMo',
+        message: data.message || "Không tạo được phiên thanh toán MoMo",
         data,
       });
       return;
@@ -306,7 +312,7 @@ export const createMomoPayment = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi tạo thanh toán MoMo',
+      message: "Lỗi khi tạo thanh toán MoMo",
       error: error.message,
     });
   }
@@ -334,17 +340,17 @@ export const handleMomoIpn = async (
     } = req.body;
 
     // Log IPN request for debugging (especially in test mode)
-    console.log('=== MoMo IPN Received ===');
-    console.log('Order ID:', orderId);
-    console.log('Amount:', amount);
-    console.log('Result Code:', resultCode);
-    console.log('Message:', message);
-    console.log('Transaction ID:', transId);
-    console.log('Payment Type:', payType);
-    console.log('========================');
+    console.log("=== MoMo IPN Received ===");
+    console.log("Order ID:", orderId);
+    console.log("Amount:", amount);
+    console.log("Result Code:", resultCode);
+    console.log("Message:", message);
+    console.log("Transaction ID:", transId);
+    console.log("Payment Type:", payType);
+    console.log("========================");
 
-    const accessKey = process.env.MOMO_ACCESS_KEY || '';
-    const secretKey = process.env.MOMO_SECRET_KEY || '';
+    const accessKey = process.env.MOMO_ACCESS_KEY || "";
+    const secretKey = process.env.MOMO_SECRET_KEY || "";
 
     // MoMo IPN signature order (per docs):
     // accessKey, amount, extraData, message, orderId, orderInfo, orderType,
@@ -356,60 +362,60 @@ export const handleMomoIpn = async (
       `message=${message}`,
       `orderId=${orderId}`,
       `orderInfo=${orderInfo}`,
-      `orderType=${orderType || ''}`,
+      `orderType=${orderType || ""}`,
       `partnerCode=${partnerCode}`,
-      `payType=${payType || ''}`,
+      `payType=${payType || ""}`,
       `requestId=${requestId}`,
       `responseTime=${responseTime}`,
       `resultCode=${resultCode}`,
       `transId=${transId}`,
-    ].join('&');
+    ].join("&");
 
     const expectedSignature = crypto
-      .createHmac('sha256', secretKey)
+      .createHmac("sha256", secretKey)
       .update(rawSignature)
-      .digest('hex');
+      .digest("hex");
 
     if (expectedSignature !== signature) {
-      console.error('❌ IPN Signature mismatch!');
-      console.error('Expected:', expectedSignature);
-      console.error('Received:', signature);
-      res.status(400).json({ resultCode: 1, message: 'Sai chữ ký' });
+      console.error("❌ IPN Signature mismatch!");
+      console.error("Expected:", expectedSignature);
+      console.error("Received:", signature);
+      res.status(400).json({ resultCode: 1, message: "Sai chữ ký" });
       return;
     }
 
     const extra =
-      extraData && typeof extraData === 'string'
-        ? JSON.parse(Buffer.from(extraData, 'base64').toString('utf8'))
+      extraData && typeof extraData === "string"
+        ? JSON.parse(Buffer.from(extraData, "base64").toString("utf8"))
         : null;
 
-    console.log('Extra Data:', extra);
+    console.log("Extra Data:", extra);
 
     if (resultCode === 0 && extra?.userId && extra?.duration) {
-      console.log('✅ Payment successful! Activating subscription...');
-      console.log('User ID:', extra.userId);
-      console.log('Duration:', extra.duration, 'months');
-      
+      console.log("✅ Payment successful! Activating subscription...");
+      console.log("User ID:", extra.userId);
+      console.log("Duration:", extra.duration, "months");
+
       await activateSubscriptionForUser(
         extra.userId,
         Number(extra.duration),
-        'momo',
-        'paid'
+        "momo",
+        "paid"
       );
-      
-      console.log('✅ Subscription activated successfully!');
+
+      console.log("✅ Subscription activated successfully!");
     } else {
-      console.log('⚠️ Payment not successful or missing data');
-      console.log('Result Code:', resultCode);
-      console.log('Extra Data:', extra);
+      console.log("⚠️ Payment not successful or missing data");
+      console.log("Result Code:", resultCode);
+      console.log("Extra Data:", extra);
     }
 
-    res.json({ resultCode: 0, message: 'IPN received' });
+    res.json({ resultCode: 0, message: "IPN received" });
   } catch (error: any) {
-    console.error('❌ IPN Error:', error);
+    console.error("❌ IPN Error:", error);
     res.status(500).json({
       resultCode: 1,
-      message: 'Lỗi xử lý IPN',
+      message: "Lỗi xử lý IPN",
       error: error.message,
     });
   }
@@ -421,30 +427,31 @@ export const cancelSubscription = async (
 ): Promise<void> => {
   try {
     const authReq = req as AuthRequest;
-    const subscription = await Subscription.findOne({ userId: authReq.user!._id });
+    const subscription = await Subscription.findOne({
+      userId: authReq.user!._id,
+    });
 
     if (!subscription) {
       res.status(404).json({
         success: false,
-        message: 'Không tìm thấy subscription',
+        message: "Không tìm thấy subscription",
       });
       return;
     }
 
-    subscription.status = 'cancelled';
+    subscription.status = "cancelled";
     await subscription.save();
 
     res.json({
       success: true,
-      message: 'Hủy subscription thành công',
+      message: "Hủy subscription thành công",
       data: subscription,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi hủy subscription',
+      message: "Lỗi khi hủy subscription",
       error: error.message,
     });
   }
 };
-

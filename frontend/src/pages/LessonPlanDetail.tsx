@@ -279,14 +279,14 @@ const LessonPlanDetail = () => {
             <div className="space-y-4">
               <div className="p-5 border-l-4 border-green-500 bg-green-50 rounded-xl">
                 <p className="text-gray-700">
-                  <span className="font-bold">- Giáo viên:</span>{' '}
-                  {lessonPlan.content.equipment.teacher.join(', ')}
+                  <span className="font-bold">- Giáo viên:</span>{" "}
+                  {lessonPlan.content.equipment.teacher.join(", ")}
                 </p>
               </div>
               <div className="p-5 border-l-4 border-emerald-500 bg-emerald-50 rounded-xl">
                 <p className="text-gray-700">
-                  <span className="font-bold">- Học sinh:</span>{' '}
-                  {lessonPlan.content.equipment.student.join(', ')}
+                  <span className="font-bold">- Học sinh:</span>{" "}
+                  {lessonPlan.content.equipment.student.join(", ")}
                 </p>
               </div>
             </div>
@@ -335,31 +335,39 @@ const LessonPlanDetail = () => {
                     key as keyof typeof lessonPlan.content.activities
                   ];
                 // Chỉ hiển thị activity nếu có nội dung (content là bắt buộc, title có thể rỗng)
-                if (!activity || !activity.content || activity.content.trim() === '') {
+                if (
+                  !activity ||
+                  !activity.content ||
+                  activity.content.trim() === ""
+                ) {
                   return null;
                 }
-                
+
                 // Xác định title và icon dựa trên nội dung
                 let activityTitle: string;
                 let displayIcon = icon;
-                
+
                 if (activity.title && activity.title.trim()) {
                   // Nếu title có chứa "TIẾT", dùng title đó và icon phù hợp
-                  if (activity.title.toUpperCase().includes('TIẾT')) {
+                  if (activity.title.toUpperCase().includes("TIẾT")) {
                     activityTitle = activity.title;
                     // Icon cho tiết: 📚 hoặc 📖
-                    displayIcon = '📚';
+                    displayIcon = "📚";
                   } else {
                     activityTitle = activity.title;
                   }
                 } else {
                   // Nếu title rỗng, dùng title mặc định dựa trên key
-                  activityTitle = key === 'activity1' ? 'Hoạt động 1' 
-                    : key === 'activity2' ? 'Hoạt động 2'
-                    : key === 'activity3' ? 'Hoạt động 3'
-                    : 'Hoạt động 4';
+                  activityTitle =
+                    key === "activity1"
+                      ? "Hoạt động 1"
+                      : key === "activity2"
+                      ? "Hoạt động 2"
+                      : key === "activity3"
+                      ? "Hoạt động 3"
+                      : "Hoạt động 4";
                 }
-                
+
                 return (
                   <div
                     key={key}
@@ -396,14 +404,14 @@ const LessonPlanDetail = () => {
                             </tr>
                           ),
                           th: ({ children }) => (
-                            <th 
-                              className="px-4 py-3 text-sm font-bold text-left border border-gray-300" 
-                              style={{ 
-                                color: 'white',
-                                backgroundColor: 'transparent'
+                            <th
+                              className="px-4 py-3 text-sm font-bold text-left border border-gray-300"
+                              style={{
+                                color: "white",
+                                backgroundColor: "transparent",
                               }}
                             >
-                              <span style={{ color: 'white' }}>{children}</span>
+                              <span style={{ color: "white" }}>{children}</span>
                             </th>
                           ),
                           td: ({ children }) => (
@@ -417,9 +425,7 @@ const LessonPlanDetail = () => {
                             </strong>
                           ),
                           em: ({ children }) => (
-                            <em className="italic text-gray-600">
-                              {children}
-                            </em>
+                            <em className="italic text-gray-600">{children}</em>
                           ),
                         }}
                         className="text-gray-700"
@@ -451,30 +457,31 @@ const LessonPlanDetail = () => {
                   Nhận xét chung
                 </h3>
                 <p className="leading-relaxed text-gray-700 whitespace-pre-line pl-7">
-                  {lessonPlan.content.adjustment?.nhanXet && lessonPlan.content.adjustment.nhanXet.trim() 
-                    ? lessonPlan.content.adjustment.nhanXet 
-                    : '(Chưa có nhận xét)'}
+                  {lessonPlan.content.adjustment?.nhanXet &&
+                  lessonPlan.content.adjustment.nhanXet.trim()
+                    ? lessonPlan.content.adjustment.nhanXet
+                    : "(Chưa có nhận xét)"}
                 </p>
               </div>
-              {lessonPlan.content.adjustment?.huongDieuChinh && 
-               lessonPlan.content.adjustment.huongDieuChinh.length > 0 && (
-                <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
-                  <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
-                    <span className="mr-2">🔧</span>
-                    Hướng điều chỉnh
-                  </h3>
-                  <ul className="space-y-2 pl-7">
-                    {lessonPlan.content.adjustment.huongDieuChinh.map(
-                      (item, idx) => (
-                        <li key={idx} className="flex items-start space-x-2">
-                          <span className="mt-1 text-gray-500">-</span>
-                          <span className="text-gray-700">{item}</span>
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              )}
+              {lessonPlan.content.adjustment?.huongDieuChinh &&
+                lessonPlan.content.adjustment.huongDieuChinh.length > 0 && (
+                  <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
+                    <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+                      <span className="mr-2">🔧</span>
+                      Hướng điều chỉnh
+                    </h3>
+                    <ul className="space-y-2 pl-7">
+                      {lessonPlan.content.adjustment.huongDieuChinh.map(
+                        (item, idx) => (
+                          <li key={idx} className="flex items-start space-x-2">
+                            <span className="mt-1 text-gray-500">-</span>
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                )}
             </div>
           </div>
         </div>

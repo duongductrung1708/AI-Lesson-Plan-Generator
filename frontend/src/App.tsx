@@ -38,7 +38,7 @@ function AppContent() {
     );
   }
 
-   // Admin: luôn hiển thị AdminDashboard, không cho truy cập trang khác
+  // Admin: luôn hiển thị AdminDashboard, không cho truy cập trang khác
   if (user?.isAdmin) {
     // Admin có layout riêng, không dùng Navbar/KeyboardShortcutHandler của user thường
     return <AdminDashboard />;

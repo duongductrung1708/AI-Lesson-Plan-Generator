@@ -50,7 +50,7 @@ const ReleaseNotes = () => {
         </Button>
       </Stack>
       <Typography variant="h3" fontWeight="bold" gutterBottom>
-        Release Notes
+        Ghi chú phiên bản
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Theo dõi các cập nhật mới nhất của AI Lesson Plan Generator.

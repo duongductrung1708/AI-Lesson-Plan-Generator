@@ -192,7 +192,7 @@ const Billing = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Billing & Subscription
+        Thanh toán & Đăng ký
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Đăng ký gói để sử dụng dịch vụ AI soạn giáo án tự động
@@ -296,7 +296,7 @@ const Billing = () => {
                   disabled={processing}
                   sx={{ mt: 2 }}
                 >
-                  Hủy subscription
+                  Hủy đăng ký
                 </Button>
               </Grid>
             )}

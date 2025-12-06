@@ -42,7 +42,7 @@ const KeyboardShortcuts = () => {
         </Button>
       </Stack>
       <Typography variant="h3" fontWeight="bold" gutterBottom>
-        Keyboard Shortcuts
+        Phím tắt bàn phím
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         Sử dụng phím tắt để thao tác nhanh hơn với AI Lesson Plan Generator.
