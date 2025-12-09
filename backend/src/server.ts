@@ -11,6 +11,7 @@ import lessonPlanRoutes from './routes/lessonPlan.routes';
 import uploadRoutes from './routes/upload.routes';
 import billingRoutes from './routes/billing.routes';
 import adminRoutes from './routes/admin.routes';
+import reportRoutes from './routes/report.routes';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/lesson-plans', lessonPlanRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

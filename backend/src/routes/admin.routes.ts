@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.model';
 import Subscription from '../models/Subscription.model';
 import LessonPlan from '../models/LessonPlan.model';
+import Report from '../models/Report.model';
 import { protect } from '../middleware/auth.middleware';
 import { requireAdmin } from '../middleware/admin.middleware';
 import { PLAN_PRICING } from '../controllers/billing.controller';
@@ -361,6 +362,45 @@ router.get('/payments/stats', async (_req, res) => {
   }
 });
 
+// ===== User reports =====
+router.get('/reports', async (_req, res) => {
+  try {
+    const reports = await Report.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json({ reports });
+  } catch (error) {
+    console.error('Admin reports error:', error);
+    res.status(500).json({ message: 'Không lấy được danh sách báo cáo.' });
+  }
+});
+
+router.patch('/reports/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body as { status: 'pending' | 'resolved' };
+
+    if (!status || !['pending', 'resolved'].includes(status)) {
+      res.status(400).json({ message: 'Trạng thái không hợp lệ.' });
+      return;
+    }
+
+    const report = await Report.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!report) {
+      res.status(404).json({ message: 'Không tìm thấy báo cáo.' });
+      return;
+    }
+
+    res.json({ report });
+  } catch (error) {
+    console.error('Update report status error:', error);
+    res.status(500).json({ message: 'Không cập nhật được trạng thái báo cáo.' });
+  }
+});
+
 export default router;
-
-

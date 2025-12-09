@@ -48,9 +48,22 @@ import {
   Visibility,
   Edit,
   Add,
+  ReportProblem,
+  Refresh,
   Delete,
-  Payment,
 } from "@mui/icons-material";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as ReTooltip,
+  Legend,
+  CartesianGrid,
+  LineChart,
+  Line,
+} from "recharts";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -72,13 +85,18 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<
-    "stats" | "users" | "subscriptions" | "lessonPlans" | "payments"
+    "stats" | "users" | "subscriptions" | "lessonPlans" | "reports"
   >("stats");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [lessonPlans, setLessonPlans] = useState<any[]>([]);
   const [paymentStats, setPaymentStats] = useState<any>(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [reportSearch, setReportSearch] = useState("");
+  const [reportPage, setReportPage] = useState(0);
+  const [reportRowsPerPage, setReportRowsPerPage] = useState(10);
+  const [updatingReportId, setUpdatingReportId] = useState<string | null>(null);
   const [viewUserOpen, setViewUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
@@ -167,20 +185,46 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchReports = async () => {
+    try {
+      const res = await axios.get("/api/admin/reports");
+      setReports(res.data.reports || []);
+    } catch {
+      toast.error("Không tải được báo cáo người dùng.");
+    }
+  };
+
+  const updateReportStatus = async (
+    id: string,
+    status: "pending" | "resolved"
+  ) => {
+    try {
+      setUpdatingReportId(id);
+      const res = await axios.patch(`/api/admin/reports/${id}/status`, {
+        status,
+      });
+      setReports((prev) =>
+        prev.map((r) =>
+          r._id === id ? { ...r, status: res.data.report?.status || status } : r
+        )
+      );
+      toast.success("Cập nhật trạng thái báo cáo thành công.");
+    } catch {
+      toast.error("Không cập nhật được trạng thái báo cáo.");
+    } finally {
+      setUpdatingReportId(null);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchUsers();
     fetchSubscriptions();
     fetchLessonPlans();
+    fetchReports();
+    fetchPaymentStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (selectedTab === "payments") {
-      fetchPaymentStats();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTab]);
 
   const handleToggleUserActive = async (id: string, isActive: boolean) => {
     try {
@@ -404,8 +448,8 @@ const AdminDashboard = () => {
           <ListItemText primary="Giáo án" />
         </ListItemButton>
         <ListItemButton
-          selected={selectedTab === "payments"}
-          onClick={() => setSelectedTab("payments")}
+          selected={selectedTab === "reports"}
+          onClick={() => setSelectedTab("reports")}
           sx={{
             mx: 1,
             mb: 0.5,
@@ -417,9 +461,9 @@ const AdminDashboard = () => {
           }}
         >
           <ListItemIcon>
-            <Payment fontSize="small" />
+            <ReportProblem fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Thanh toán" />
+          <ListItemText primary="Báo cáo" />
         </ListItemButton>
       </List>
       <Box sx={{ px: 2, py: 2 }}>
@@ -441,6 +485,15 @@ const AdminDashboard = () => {
       totalUsers > 0 ? Math.round((trialUsers / totalUsers) * 100) : 0;
     const subPercent =
       totalUsers > 0 ? Math.round((activeSubs / totalUsers) * 100) : 0;
+
+    const conversionChartData = [
+      { name: "Dùng thử", value: trialPercent },
+      { name: "Có gói", value: subPercent },
+      {
+        name: "Còn lại",
+        value: Math.max(0, 100 - Math.min(trialPercent + subPercent, 100)),
+      },
+    ];
 
     return (
       <Box sx={{ p: 3 }}>
@@ -539,6 +592,7 @@ const AdminDashboard = () => {
             direction="row"
             alignItems="center"
             justifyContent="space-between"
+            sx={{ mb: 2 }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <ShowChart color="primary" />
@@ -549,45 +603,339 @@ const AdminDashboard = () => {
             </Typography>
           </Stack>
 
-          <Box
-            sx={{
-              mt: 3,
-              display: "flex",
-              alignItems: "flex-end",
-              gap: 3,
-              height: 180,
-            }}
-          >
-            {[
-              { label: "Dùng thử", value: trialPercent, color: "#22c55e" },
-              { label: "Có gói", value: subPercent, color: "#3b82f6" },
-              {
-                label: "Còn lại",
-                value: 100 - Math.min(trialPercent + subPercent, 100),
-                color: "#e5e7eb",
-              },
-            ].map((item) => (
-              <Box key={item.label} sx={{ flex: 1, textAlign: "center" }}>
-                <Box
-                  sx={{
-                    mx: "auto",
-                    width: 32,
-                    height: `${Math.max(item.value, 5)}%`,
-                    maxHeight: 160,
-                    borderRadius: 2,
-                    bgcolor: item.color,
-                    transition: "height 0.4s ease",
-                  }}
-                />
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {item.label}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {item.value}%
-                </Typography>
-              </Box>
-            ))}
+          <Box sx={{ width: "100%", height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={conversionChartData} barSize={48}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" />
+                <YAxis unit="%" />
+                <ReTooltip />
+                <Legend />
+                <Bar dataKey="value" name="Tỷ lệ" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </Box>
+        </Paper>
+
+        {/* Thống kê thanh toán (gộp vào tab Thống kê) */}
+        <Box sx={{ mt: 4, display: "grid", gap: 3, gridTemplateColumns: { xs: "1fr", lg: "2fr 3fr" } }}>
+          <Paper sx={{ p: 3, borderRadius: 3 }} elevation={3}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6">Tổng quan doanh thu</Typography>
+              <IconButton color="primary" onClick={fetchPaymentStats}>
+                <Refresh />
+              </IconButton>
+            </Stack>
+
+            {!paymentStats ? (
+              <Typography variant="body2" color="text.secondary">
+                Đang tải thống kê thanh toán...
+              </Typography>
+            ) : (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "white",
+                    }}
+                    elevation={0}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Tổng doanh thu
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">
+                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+                        paymentStats.totalRevenue || 0
+                      )}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                      color: "white",
+                    }}
+                    elevation={0}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Giao dịch thành công
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">
+                      {paymentStats.transactionCount || 0}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                      color: "white",
+                    }}
+                    elevation={0}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Đang chờ thanh toán
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">
+                      {paymentStats.pendingCount || 0}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                      color: "white",
+                    }}
+                    elevation={0}
+                  >
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Giao dịch thất bại
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold">
+                      {paymentStats.failedCount || 0}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            )}
+          </Paper>
+
+          <Paper sx={{ p: 3, borderRadius: 3 }} elevation={3}>
+            <Typography variant="h6" gutterBottom>
+              Doanh thu theo tháng
+            </Typography>
+            {!paymentStats ? (
+              <Typography variant="body2" color="text.secondary">
+                Đang tải...
+              </Typography>
+            ) : (
+              <Box sx={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={Object.entries(paymentStats.revenueByMonth || {})
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([month, revenue]) => ({
+                        month,
+                        label: new Date(month + "-01").toLocaleDateString("vi-VN", {
+                          year: "numeric",
+                          month: "short",
+                        }),
+                        revenue: Number(revenue) || 0,
+                      }))}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" />
+                    <YAxis
+                      tickFormatter={(v: number) => `${(v / 1_000_000).toFixed(0)}tr`}
+                    />
+                    <ReTooltip
+                      formatter={(value: any) =>
+                        new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+                          value as number
+                        )
+                      }
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Doanh thu"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            )}
+          </Paper>
+        </Box>
+      </Box>
+    );
+  };
+
+  const renderReports = () => {
+    const filtered = reports.filter((r) => {
+      const q = reportSearch.toLowerCase();
+      return (
+        r.email?.toLowerCase().includes(q) ||
+        r.name?.toLowerCase().includes(q) ||
+        r.title?.toLowerCase().includes(q) ||
+        r.message?.toLowerCase().includes(q) ||
+        r.status?.toLowerCase().includes(q)
+      );
+    });
+
+    const paged = filtered.slice(
+      reportPage * reportRowsPerPage,
+      reportPage * reportRowsPerPage + reportRowsPerPage
+    );
+
+    const handleChangePage = (_: unknown, newPage: number) => {
+      setReportPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (
+      event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      setReportRowsPerPage(parseInt(event.target.value, 10));
+      setReportPage(0);
+    };
+
+    const formatDate = (value?: string) => {
+      if (!value) return "-";
+      try {
+        return new Date(value).toLocaleString("vi-VN");
+      } catch {
+        return value;
+      }
+    };
+
+    return (
+      <Box sx={{ p: 3 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "stretch", md: "center" }}
+          mb={2}
+          spacing={2}
+        >
+          <Typography variant="h5">Báo cáo từ người dùng</Typography>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <TextField
+              size="small"
+              placeholder="Tìm theo email, tên, tiêu đề..."
+              value={reportSearch}
+              onChange={(e) => {
+                setReportSearch(e.target.value);
+                setReportPage(0);
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <IconButton color="primary" onClick={fetchReports}>
+              <Refresh />
+            </IconButton>
+          </Stack>
+        </Stack>
+
+        <Paper>
+          <Fade in timeout={300}>
+            <Box>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Người gửi</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Tiêu đề</TableCell>
+                    <TableCell>Nội dung</TableCell>
+                    <TableCell>Trạng thái</TableCell>
+                    <TableCell>Thời gian</TableCell>
+                    <TableCell align="right">Hành động</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paged.map((r) => (
+                    <TableRow
+                      key={r._id || r.id || `${r.email}-${r.title}`}
+                      hover
+                    >
+                      <TableCell>{r.name || "-"}</TableCell>
+                      <TableCell>{r.email || "-"}</TableCell>
+                      <TableCell sx={{ maxWidth: 220 }}>
+                        <Typography variant="body2" noWrap title={r.title}>
+                          {r.title || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 320 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-line" }}
+                          title={r.message}
+                        >
+                          {r.message || "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          sx={{
+                            color: "white",
+                          }}
+                          label={
+                            r.status === "resolved"
+                              ? "Đã xử lý"
+                              : r.status === "pending"
+                              ? "Chờ xử lý"
+                              : r.status || "Chờ xử lý"
+                          }
+                          color={
+                            r.status === "resolved" ? "success" : "warning"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{formatDate(r.createdAt)}</TableCell>
+                      <TableCell align="right">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          justifyContent="flex-end"
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            Chờ
+                          </Typography>
+                          <Switch
+                            size="small"
+                            color="success"
+                            checked={r.status === "resolved"}
+                            disabled={updatingReportId === (r._id || r.id)}
+                            onChange={(_, checked) =>
+                              updateReportStatus(
+                                r._id || r.id,
+                                checked ? "resolved" : "pending"
+                              )
+                            }
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            Xong
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <TablePagination
+                component="div"
+                count={filtered.length}
+                page={reportPage}
+                onPageChange={handleChangePage}
+                rowsPerPage={reportRowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage="Số dòng"
+              />
+            </Box>
+          </Fade>
         </Paper>
       </Box>
     );
@@ -627,7 +975,7 @@ const AdminDashboard = () => {
           spacing={2}
         >
           <Typography variant="h5">Quản lý người dùng</Typography>
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <TextField
               size="small"
               placeholder="Tìm theo email hoặc tên..."
@@ -644,9 +992,9 @@ const AdminDashboard = () => {
                 ),
               }}
             />
-            <Button variant="outlined" onClick={fetchUsers}>
-              Tải lại
-            </Button>
+            <IconButton color="primary" onClick={fetchUsers}>
+              <Refresh />
+            </IconButton>
           </Stack>
         </Stack>
         <Paper>
@@ -747,7 +1095,7 @@ const AdminDashboard = () => {
           spacing={2}
         >
           <Typography variant="h5">Quản lý gói dịch vụ (trả phí)</Typography>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <TextField
               size="small"
               placeholder="Tìm theo email hoặc tên..."
@@ -776,9 +1124,9 @@ const AdminDashboard = () => {
               <MenuItem value="expired">Đã hết hạn</MenuItem>
               <MenuItem value="cancelled">Đã hủy</MenuItem>
             </TextField>
-            <Button variant="outlined" onClick={fetchSubscriptions}>
-              Tải lại
-            </Button>
+            <IconButton color="primary" onClick={fetchSubscriptions}>
+              <Refresh />
+            </IconButton>
             <Button
               variant="contained"
               startIcon={<Add />}
@@ -887,7 +1235,7 @@ const AdminDashboard = () => {
           spacing={2}
         >
           <Typography variant="h5">Giáo án</Typography>
-          <Stack direction="row" spacing={2}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <TextField
               size="small"
               placeholder="Tìm theo tiêu đề, giáo viên, môn hoặc email..."
@@ -904,9 +1252,9 @@ const AdminDashboard = () => {
                 ),
               }}
             />
-            <Button variant="outlined" onClick={fetchLessonPlans}>
-              Tải lại
-            </Button>
+            <IconButton color="primary" onClick={fetchLessonPlans}>
+              <Refresh />
+            </IconButton>
           </Stack>
         </Stack>
         <Paper>
@@ -936,13 +1284,14 @@ const AdminDashboard = () => {
                           : "-"}
                       </TableCell>
                       <TableCell align="right">
-                        <Button
+                        <IconButton
                           size="small"
                           color="error"
                           onClick={() => handleDeleteLessonPlan(p._id)}
+                          title="Xóa"
                         >
-                          Xóa
-                        </Button>
+                          <Delete />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -964,6 +1313,7 @@ const AdminDashboard = () => {
     );
   };
 
+  // @ts-ignore legacy (merged into stats tab)
   const renderPayments = () => {
     if (!paymentStats) {
       return (
@@ -1005,9 +1355,9 @@ const AdminDashboard = () => {
           spacing={2}
         >
           <Typography variant="h5">Thống kê thanh toán</Typography>
-          <Button variant="outlined" onClick={fetchPaymentStats}>
-            Tải lại
-          </Button>
+          <IconButton color="primary" onClick={fetchPaymentStats}>
+            <Refresh />
+          </IconButton>
         </Stack>
 
         {/* Summary Cards */}
@@ -1422,7 +1772,7 @@ const AdminDashboard = () => {
           {selectedTab === "users" && renderUsers()}
           {selectedTab === "subscriptions" && renderSubscriptions()}
           {selectedTab === "lessonPlans" && renderLessonPlans()}
-          {selectedTab === "payments" && renderPayments()}
+          {selectedTab === "reports" && renderReports()}
         </Container>
 
         {/* View user dialog */}

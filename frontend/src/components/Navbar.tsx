@@ -38,6 +38,7 @@ import {
   KeyboardAlt as KeyboardAltIcon,
   AutoStories as AutoStoriesIcon,
 } from "@mui/icons-material";
+import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import hanaiLogo from "../assets/logo/hanai_logo.png";
@@ -100,7 +101,7 @@ const Navbar = () => {
     setReportBugOpen(false);
   };
 
-  const handleReportBugSubmit = () => {
+  const handleReportBugSubmit = async () => {
     const errors: typeof bugErrors = {};
     if (!bugForm.title.trim()) {
       errors.title = "Vui lòng nhập tiêu đề lỗi";
@@ -120,19 +121,31 @@ const Navbar = () => {
       return;
     }
 
-    const body = `Tên: ${user?.name || "Không cung cấp"}
-Email: ${emailValue}
+    try {
+      const payload = {
+        title: bugForm.title.trim(),
+        message: bugForm.description.trim(),
+        email: emailValue,
+        name: user?.name || "Người dùng",
+      };
 
-Mô tả lỗi:
-${bugForm.description.trim()}`;
+      // ưu tiên gửi qua endpoint yêu cầu đăng nhập; fallback public nếu bị 401/403
+      try {
+        await axios.post("/api/reports", payload, { withCredentials: true });
+      } catch (err: any) {
+        if (err?.response?.status === 401 || err?.response?.status === 403) {
+          await axios.post("/api/reports/public", payload);
+        } else {
+          throw err;
+        }
+      }
 
-    const mailtoLink = `mailto:support@hanai.vn?subject=${encodeURIComponent(
-      `Bug Report - ${bugForm.title.trim()}`
-    )}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailtoLink;
-    toast.success("Đang mở email để bạn gửi báo lỗi.");
-    setReportBugOpen(false);
+      toast.success("Đã gửi báo cáo tới admin. Cảm ơn bạn!");
+      setReportBugOpen(false);
+    } catch (error) {
+      console.error("Report bug error:", error);
+      toast.error("Gửi báo cáo không thành công. Vui lòng thử lại.");
+    }
   };
 
   const helpLinks = [

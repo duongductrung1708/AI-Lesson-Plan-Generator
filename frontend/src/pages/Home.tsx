@@ -185,6 +185,94 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      {/* Feedback Section */}
+      <div className="px-4 py-16 border-t border-gray-100 bg-gray-50 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
+              Phản hồi từ giáo viên
+            </h2>
+            <p className="mt-3 text-lg text-gray-600">
+              Trải nghiệm thực tế từ những người đã sử dụng AI soạn giáo án
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                name: "Cô Lan – Tiểu học",
+                quote:
+                  "Tiết kiệm rất nhiều thời gian, giáo án ra đúng cấu trúc 2345, chỉ cần chỉnh nhẹ là dạy được.",
+              },
+              {
+                name: "Thầy Minh – THCS",
+                quote:
+                  "Các hoạt động được gộp bảng rõ ràng, tải DOCX định dạng đẹp, dễ in và chia sẻ.",
+              },
+              {
+                name: "Cô Hạnh – THPT",
+                quote:
+                  "AI tận dụng tốt tài liệu mình upload, gợi ý hoạt động bám sát nội dung, rất hữu ích.",
+              },
+            ].map((fb) => (
+              <div
+                key={fb.name}
+                className="p-6 transition-shadow bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md"
+              >
+                <div className="mb-3 text-xl text-blue-600">“</div>
+                <p className="leading-relaxed text-gray-700">{fb.quote}</p>
+                <div className="mt-4 font-semibold text-gray-900">{fb.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="px-4 py-10 bg-white border-t border-gray-100 sm:px-6 lg:px-8">
+        <div className="grid max-w-6xl gap-8 mx-auto md:grid-cols-4">
+          <div className="md:col-span-2">
+            <h3 className="mb-2 text-lg font-bold text-gray-900">
+              AI Lesson Plan Generator
+            </h3>
+            <p className="text-gray-600">
+              Công cụ hỗ trợ giáo viên soạn giáo án nhanh, đúng chuẩn, tận dụng sức mạnh AI.
+            </p>
+          </div>
+          <div>
+            <h4 className="mb-3 text-sm font-semibold text-gray-900">Liên kết</h4>
+            <ul className="space-y-2 text-gray-600">
+              <li>
+                <Link to="/login" className="hover:text-blue-600">
+                  Đăng nhập
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="hover:text-blue-600">
+                  Đăng ký
+                </Link>
+              </li>
+              <li>
+                <Link to="/create" className="hover:text-blue-600">
+                  Tạo giáo án
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-3 text-sm font-semibold text-gray-900">Hỗ trợ</h4>
+            <ul className="space-y-2 text-gray-600">
+              <li>trungyna1708@gmail.com</li>
+              <li>Thời gian: 8:00 - 21:00</li>
+              <li className="text-gray-500">Made with ❤️ for teachers</li>
+            </ul>
+          </div>
+        </div>
+        <div className="mt-8 text-sm text-center text-gray-500">
+          © {new Date().getFullYear()} AI Lesson Plan Generator. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };
