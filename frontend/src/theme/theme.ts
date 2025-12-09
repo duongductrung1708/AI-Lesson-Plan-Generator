@@ -1,4 +1,5 @@
-import { createTheme, PaletteMode } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
+import { PaletteMode } from "@mui/material";
 
 const baseTypography = {
   fontFamily: [
