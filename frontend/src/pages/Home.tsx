@@ -5,6 +5,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SaveAsIcon from "@mui/icons-material/SaveAs";
+import FavoriteIcon from '@mui/icons-material/Favorite';
 
 const Home = () => {
   const { user } = useAuth();
@@ -153,32 +154,31 @@ const Home = () => {
               </div>
               <div className="hidden md:block">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-6 text-center shadow-lg bg-white/80 backdrop-blur rounded-xl">
-                    <div className="mb-2 text-4xl font-bold text-blue-600">
-                      100%
+                  {[
+                    { value: "100%", color: "text-blue-600", label: "Tuân thủ chuẩn" },
+                    { value: "24/7", color: "text-indigo-600", label: "Sẵn sàng sử dụng" },
+                    { value: "∞", color: "text-purple-600", label: "Không giới hạn" },
+                    { value: "⚡", color: "text-pink-600", label: "Tốc độ cao" },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="p-6 text-center shadow-lg rounded-xl backdrop-blur border transition-colors"
+                      style={{
+                        backgroundColor: "var(--surface)",
+                        borderColor: "var(--surface-border)",
+                      }}
+                    >
+                      <div className={`mb-2 text-4xl font-bold ${item.color}`}>
+                        {item.value}
+                      </div>
+                      <div
+                        className="text-sm"
+                        style={{ color: "var(--muted)" }}
+                      >
+                        {item.label}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">Tuân thủ chuẩn</div>
-                  </div>
-                  <div className="p-6 text-center shadow-lg bg-white/80 backdrop-blur rounded-xl">
-                    <div className="mb-2 text-4xl font-bold text-indigo-600">
-                      24/7
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Sẵn sàng sử dụng
-                    </div>
-                  </div>
-                  <div className="p-6 text-center shadow-lg bg-white/80 backdrop-blur rounded-xl">
-                    <div className="mb-2 text-4xl font-bold text-purple-600">
-                      ∞
-                    </div>
-                    <div className="text-sm text-gray-600">Không giới hạn</div>
-                  </div>
-                  <div className="p-6 text-center shadow-lg bg-white/80 backdrop-blur rounded-xl">
-                    <div className="mb-2 text-4xl font-bold text-pink-600">
-                      ⚡
-                    </div>
-                    <div className="text-sm text-gray-600">Tốc độ cao</div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -201,17 +201,17 @@ const Home = () => {
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                name: "Cô Lan – Tiểu học",
+                name: "Cô Hằng – Tiểu học",
                 quote:
                   "Tiết kiệm rất nhiều thời gian, giáo án ra đúng cấu trúc 2345, chỉ cần chỉnh nhẹ là dạy được.",
               },
               {
-                name: "Thầy Minh – THCS",
+                name: "Thầy Trung – THCS",
                 quote:
                   "Các hoạt động được gộp bảng rõ ràng, tải DOCX định dạng đẹp, dễ in và chia sẻ.",
               },
               {
-                name: "Cô Hạnh – THPT",
+                name: "Cô Mai – THPT",
                 quote:
                   "AI tận dụng tốt tài liệu mình upload, gợi ý hoạt động bám sát nội dung, rất hữu ích.",
               },
@@ -265,12 +265,12 @@ const Home = () => {
             <ul className="space-y-2 text-gray-600">
               <li>trungyna1708@gmail.com</li>
               <li>Thời gian: 8:00 - 21:00</li>
-              <li className="text-gray-500">Made with ❤️ for teachers</li>
+              <li className="text-gray-500">Tạo ra với <FavoriteIcon sx={{ color: 'red' }} /> cho các giáo viên</li>
             </ul>
           </div>
         </div>
         <div className="mt-8 text-sm text-center text-gray-500">
-          © {new Date().getFullYear()} AI Lesson Plan Generator. All rights reserved.
+          © {new Date().getFullYear()} HANG. All rights reserved.
         </div>
       </footer>
     </div>

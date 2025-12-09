@@ -16,7 +16,9 @@ import {
   Tabs,
   Tab,
   CircularProgress,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
   Person as PersonIcon,
   Lock as LockIcon,
@@ -40,6 +42,8 @@ interface UserProfile {
 
 const Profile = () => {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
@@ -216,6 +220,10 @@ const Profile = () => {
 
   const isGoogleAccount = !!profile.googleId;
   const showSetPassword = isGoogleAccount && !hasPasswordState;
+  const cardBg = `linear-gradient(135deg, ${alpha(
+    theme.palette.primary.main,
+    isDark ? 0.08 : 0.05
+  )} 0%, ${alpha(theme.palette.secondary.main, isDark ? 0.08 : 0.05)} 100%)`;
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -224,8 +232,9 @@ const Profile = () => {
         sx={{
           p: 4,
           borderRadius: 3,
-          background:
-            "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)",
+          background: theme.palette.background.paper,
+          border: "1px solid",
+          borderColor: "divider",
         }}
       >
         {/* Header */}
@@ -293,8 +302,7 @@ const Profile = () => {
             <Grid item xs={12}>
               <Card
                 sx={{
-                  background:
-                    "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%)",
+                  background: cardBg,
                   border: "1px solid",
                   borderColor: "divider",
                 }}
@@ -386,8 +394,7 @@ const Profile = () => {
             <Grid item xs={12}>
               <Card
                 sx={{
-                  background:
-                    "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%)",
+                  background: cardBg,
                   border: "1px solid",
                   borderColor: "divider",
                 }}
@@ -437,8 +444,7 @@ const Profile = () => {
               // Set Password (for Google accounts without password)
               <Card
                 sx={{
-                  background:
-                    "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%)",
+                  background: cardBg,
                   border: "1px solid",
                   borderColor: "divider",
                   p: 3,
@@ -495,8 +501,7 @@ const Profile = () => {
               // Change Password (for accounts with password)
               <Card
                 sx={{
-                  background:
-                    "linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%)",
+                  background: cardBg,
                   border: "1px solid",
                   borderColor: "divider",
                   p: 3,

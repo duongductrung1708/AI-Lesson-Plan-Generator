@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import { alpha, useTheme } from "@mui/material/styles";
 
 interface LessonPlan {
   _id: string;
@@ -49,6 +50,11 @@ const LessonPlanDetail = () => {
   const navigate = useNavigate();
   const [lessonPlan, setLessonPlan] = useState<LessonPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  const softBg = (color: string) =>
+    isDark ? alpha(color, 0.08) : alpha(color, 0.08);
 
   useEffect(() => {
     const fetchLessonPlan = async () => {
@@ -154,30 +160,42 @@ const LessonPlanDetail = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6 md:grid-cols-3">
-                <div className="p-3 border border-blue-100 rounded-lg bg-blue-50">
-                  <p className="mb-1 text-xs font-semibold text-blue-600">
-                    MÔN HỌC
-                  </p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {lessonPlan.subject}
-                  </p>
-                </div>
-                <div className="p-3 border border-indigo-100 rounded-lg bg-indigo-50">
-                  <p className="mb-1 text-xs font-semibold text-indigo-600">
-                    LỚP
-                  </p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {lessonPlan.grade}
-                  </p>
-                </div>
-                <div className="p-3 border border-purple-100 rounded-lg bg-purple-50">
-                  <p className="mb-1 text-xs font-semibold text-purple-600">
-                    THỜI GIAN
-                  </p>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {lessonPlan.duration} phút
-                  </p>
-                </div>
+                {[
+                  {
+                    label: "MÔN HỌC",
+                    value: lessonPlan.subject,
+                    color: theme.palette.primary.main,
+                  },
+                  {
+                    label: "LỚP",
+                    value: lessonPlan.grade,
+                    color: theme.palette.secondary.main,
+                  },
+                  {
+                    label: "THỜI GIAN",
+                    value: `${lessonPlan.duration} phút`,
+                    color: "#8b5cf6",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="p-3 border rounded-lg"
+                    style={{
+                      backgroundColor: softBg(item.color),
+                      borderColor: "var(--surface-border)",
+                    }}
+                  >
+                    <p
+                      className="mb-1 text-xs font-semibold"
+                      style={{ color: item.color }}
+                    >
+                      {item.label}
+                    </p>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-main)" }}>
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -212,8 +230,15 @@ const LessonPlanDetail = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="p-5 border-l-4 border-blue-500 bg-blue-50 rounded-xl">
-                <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg(theme.palette.primary.main),
+                  borderLeftColor: theme.palette.primary.main,
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <h3 className="flex items-center mb-3 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                   <span className="mr-2">💪</span>
                   1. Năng lực đặc thù
                 </h3>
@@ -221,16 +246,27 @@ const LessonPlanDetail = () => {
                   {lessonPlan.content.objectives.competencies.specific.map(
                     (comp, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
-                        <span className="mt-1 text-blue-500">-</span>
-                        <span className="text-gray-700">{comp}</span>
+                        <span className="mt-1" style={{ color: theme.palette.primary.main }}>
+                          -
+                        </span>
+                        <span className="text-gray-700" style={{ color: "var(--text-main)" }}>
+                          {comp}
+                        </span>
                       </li>
                     )
                   )}
                 </ul>
               </div>
 
-              <div className="p-5 border-l-4 border-indigo-500 bg-indigo-50 rounded-xl">
-                <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg(theme.palette.secondary.main),
+                  borderLeftColor: theme.palette.secondary.main,
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <h3 className="flex items-center mb-3 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                   <span className="mr-2">💪</span>
                   2. Năng lực chung
                 </h3>
@@ -239,15 +275,24 @@ const LessonPlanDetail = () => {
                     (comp, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
                         <span className="mt-1 text-green-500">-</span>
-                        <span className="text-gray-700">{comp}</span>
+                        <span className="text-gray-700" style={{ color: "var(--text-main)" }}>
+                          {comp}
+                        </span>
                       </li>
                     )
                   )}
                 </ul>
               </div>
 
-              <div className="p-5 border-l-4 border-purple-500 bg-purple-50 rounded-xl">
-                <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg("#8b5cf6"),
+                  borderLeftColor: "#8b5cf6",
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <h3 className="flex items-center mb-3 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                   <span className="mr-2">⭐</span>
                   3. Phẩm chất
                 </h3>
@@ -256,7 +301,9 @@ const LessonPlanDetail = () => {
                     (quality, idx) => (
                       <li key={idx} className="flex items-start space-x-2">
                         <span className="mt-1 text-purple-500">-</span>
-                        <span className="text-gray-700">{quality}</span>
+                        <span className="text-gray-700" style={{ color: "var(--text-main)" }}>
+                          {quality}
+                        </span>
                       </li>
                     )
                   )}
@@ -277,14 +324,28 @@ const LessonPlanDetail = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="p-5 border-l-4 border-green-500 bg-green-50 rounded-xl">
-                <p className="text-gray-700">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg(theme.palette.success.main),
+                  borderLeftColor: theme.palette.success.main,
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <p className="text-gray-700" style={{ color: "var(--text-main)" }}>
                   <span className="font-bold">- Giáo viên:</span>{" "}
                   {lessonPlan.content.equipment.teacher.join(", ")}
                 </p>
               </div>
-              <div className="p-5 border-l-4 border-emerald-500 bg-emerald-50 rounded-xl">
-                <p className="text-gray-700">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg("#10b981"),
+                  borderLeftColor: "#10b981",
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <p className="text-gray-700" style={{ color: "var(--text-main)" }}>
                   <span className="font-bold">- Học sinh:</span>{" "}
                   {lessonPlan.content.equipment.student.join(", ")}
                 </p>
@@ -307,29 +368,25 @@ const LessonPlanDetail = () => {
               {[
                 {
                   key: "activity1",
-                  bgClass: "bg-orange-50",
-                  borderClass: "border-orange-500",
+                  color: "#f97316",
                   icon: "🚀",
                 },
                 {
                   key: "activity2",
-                  bgClass: "bg-blue-50",
-                  borderClass: "border-blue-500",
+                  color: "#2563eb",
                   icon: "📖",
                 },
                 {
                   key: "activity3",
-                  bgClass: "bg-green-50",
-                  borderClass: "border-green-500",
+                  color: "#10b981",
                   icon: "✏️",
                 },
                 {
                   key: "activity4",
-                  bgClass: "bg-purple-50",
-                  borderClass: "border-purple-500",
+                  color: "#8b5cf6",
                   icon: "💡",
                 },
-              ].map(({ key, bgClass, borderClass, icon }) => {
+              ].map(({ key, color, icon }) => {
                 const activity =
                   lessonPlan.content.activities[
                     key as keyof typeof lessonPlan.content.activities
@@ -371,9 +428,14 @@ const LessonPlanDetail = () => {
                 return (
                   <div
                     key={key}
-                    className={`${bgClass} rounded-xl p-6 border-l-4 ${borderClass}`}
+                    className="p-6 border-l-4 rounded-xl"
+                    style={{
+                      backgroundColor: softBg(color),
+                      borderLeftColor: color,
+                      borderColor: "var(--surface-border)",
+                    }}
                   >
-                    <h3 className="flex items-center mb-4 text-xl font-bold text-gray-900">
+                    <h3 className="flex items-center mb-4 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                       <span className="mr-2">{displayIcon}</span>
                       {activityTitle}
                     </h3>
@@ -383,7 +445,13 @@ const LessonPlanDetail = () => {
                         components={{
                           table: ({ children }) => (
                             <div className="my-4 overflow-x-auto">
-                              <table className="min-w-full bg-white border border-collapse border-gray-300 shadow-sm">
+                              <table
+                                className="min-w-full border border-collapse shadow-sm"
+                                style={{
+                                  backgroundColor: "var(--surface)",
+                                  borderColor: "var(--surface-border)",
+                                }}
+                              >
                                 {children}
                               </table>
                             </div>
@@ -394,12 +462,17 @@ const LessonPlanDetail = () => {
                             </thead>
                           ),
                           tbody: ({ children }) => (
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody>
                               {children}
                             </tbody>
                           ),
                           tr: ({ children }) => (
-                            <tr className="transition-colors hover:bg-gray-50">
+                            <tr
+                              className="transition-colors"
+                              style={{
+                                backgroundColor: "var(--surface)",
+                              }}
+                            >
                               {children}
                             </tr>
                           ),
@@ -409,23 +482,33 @@ const LessonPlanDetail = () => {
                               style={{
                                 color: "white",
                                 backgroundColor: "transparent",
+                                borderColor: "var(--surface-border)",
                               }}
                             >
                               <span style={{ color: "white" }}>{children}</span>
                             </th>
                           ),
                           td: ({ children }) => (
-                            <td className="px-4 py-3 text-sm text-gray-700 align-top border border-gray-300">
+                            <td
+                              className="px-4 py-3 text-sm align-top border"
+                              style={{
+                                color: "var(--text-main)",
+                                borderColor: "var(--surface-border)",
+                                backgroundColor: "var(--surface)",
+                              }}
+                            >
                               {children}
                             </td>
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-bold text-gray-900">
+                            <strong className="font-bold" style={{ color: "var(--text-main)" }}>
                               {children}
                             </strong>
                           ),
                           em: ({ children }) => (
-                            <em className="italic text-gray-600">{children}</em>
+                            <em className="italic" style={{ color: "var(--muted)" }}>
+                              {children}
+                            </em>
                           ),
                         }}
                         className="text-gray-700"
@@ -451,12 +534,22 @@ const LessonPlanDetail = () => {
             </div>
 
             <div className="space-y-6">
-              <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
-                <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+              <div
+                className="p-5 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: softBg("#6b7280"),
+                  borderLeftColor: "#6b7280",
+                  borderColor: "var(--surface-border)",
+                }}
+              >
+                <h3 className="flex items-center mb-3 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                   <span className="mr-2">📝</span>
                   Nhận xét chung
                 </h3>
-                <p className="leading-relaxed text-gray-700 whitespace-pre-line pl-7">
+                <p
+                  className="leading-relaxed whitespace-pre-line pl-7"
+                  style={{ color: "var(--text-main)" }}
+                >
                   {lessonPlan.content.adjustment?.nhanXet &&
                   lessonPlan.content.adjustment.nhanXet.trim()
                     ? lessonPlan.content.adjustment.nhanXet
@@ -465,8 +558,15 @@ const LessonPlanDetail = () => {
               </div>
               {lessonPlan.content.adjustment?.huongDieuChinh &&
                 lessonPlan.content.adjustment.huongDieuChinh.length > 0 && (
-                  <div className="p-5 border-l-4 border-gray-500 bg-gray-50 rounded-xl">
-                    <h3 className="flex items-center mb-3 text-xl font-bold text-gray-900">
+                  <div
+                    className="p-5 border-l-4 rounded-xl"
+                    style={{
+                      backgroundColor: softBg("#6b7280"),
+                      borderLeftColor: "#6b7280",
+                      borderColor: "var(--surface-border)",
+                    }}
+                  >
+                    <h3 className="flex items-center mb-3 text-xl font-bold" style={{ color: "var(--text-main)" }}>
                       <span className="mr-2">🔧</span>
                       Hướng điều chỉnh
                     </h3>
@@ -475,7 +575,9 @@ const LessonPlanDetail = () => {
                         (item, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <span className="mt-1 text-gray-500">-</span>
-                            <span className="text-gray-700">{item}</span>
+                            <span className="text-gray-700" style={{ color: "var(--text-main)" }}>
+                              {item}
+                            </span>
                           </li>
                         )
                       )}

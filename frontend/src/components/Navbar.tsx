@@ -16,6 +16,7 @@ import {
   List,
   ListItem,
   ListItemButton,
+  ListItemIcon,
   ListItemText,
   Divider,
   Dialog,
@@ -37,15 +38,19 @@ import {
   BugReport as BugReportIcon,
   KeyboardAlt as KeyboardAltIcon,
   AutoStories as AutoStoriesIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import hanaiLogo from "../assets/logo/hanai_logo.png";
 import brandNameLogo from "../assets/logo/brand_name.png";
+import { useThemeMode } from "../contexts/ThemeModeContext";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -194,11 +199,15 @@ const Navbar = () => {
       position="sticky"
       elevation={1}
       sx={{
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backgroundColor:
+          mode === "dark"
+            ? "rgba(15, 23, 42, 0.9)"
+            : "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(10px)",
         borderBottom: "1px solid",
         borderColor: "divider",
         color: "text.primary",
+        borderRadius: 0,
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>
@@ -306,6 +315,15 @@ const Navbar = () => {
                 >
                   Trợ giúp
                 </Button>
+                <IconButton
+                  onClick={toggleMode}
+                  sx={{
+                    color: "text.primary",
+                  }}
+                  aria-label="Chuyển chế độ sáng/tối"
+                >
+                  {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+                </IconButton>
                 <Box
                   sx={{
                     ml: 2,
@@ -389,6 +407,13 @@ const Navbar = () => {
                 >
                   Đăng ký
                 </Button>
+                <IconButton
+                  onClick={toggleMode}
+                  sx={{ color: "text.primary" }}
+                  aria-label="Chuyển chế độ sáng/tối"
+                >
+                  {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+                </IconButton>
               </>
             )}
           </Box>
@@ -548,6 +573,25 @@ const Navbar = () => {
                 <CloseIcon />
               </IconButton>
             </Box>
+            <Divider />
+            <List>
+              <ListItem disablePadding>
+                <ListItemButton onClick={toggleMode}>
+                  <ListItemIcon>
+                    {mode === "dark" ? (
+                      <LightModeIcon color="warning" />
+                    ) : (
+                      <DarkModeIcon />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      mode === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
             <Divider />
             {user ? (
               <>
