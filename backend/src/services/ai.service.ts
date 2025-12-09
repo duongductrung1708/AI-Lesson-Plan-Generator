@@ -1424,8 +1424,19 @@ const validateAndFormatLessonPlan = (
       if (gv.length > 0 || hs.length > 0) {
         const maxRows = Math.max(gv.length, hs.length);
         for (let i = 0; i < maxRows; i++) {
-          const gvText = gv[i] || "";
-          const hsText = hs[i] || "";
+          const formatBullet = (text: string): string => {
+            const trimmed = (text || "").trim();
+            if (!trimmed) return "- ..."; // Always return a bullet placeholder
+            // Normalize in-cell newlines to <br> to avoid breaking table rows
+            const normalized = trimmed.replace(/\r?\n+/g, "<br>");
+            // Keep existing leading "-" or "•", otherwise prefix "- "
+            if (/^[-•]\s*/.test(normalized))
+              return `- ${normalized.replace(/^[-•]\s*/, "")}`;
+            return `- ${normalized}`;
+          };
+
+          const gvText = formatBullet(gv[i]);
+          const hsText = formatBullet(hs[i]);
 
           // Bỏ qua các rows có chứa "Mục tiêu" hoặc "Cách tiến hành" (đã thêm ở trên)
           const gvLower = gvText.toLowerCase();
@@ -1443,7 +1454,7 @@ const validateAndFormatLessonPlan = (
           tableRows.push(`| ${gvEscaped} | ${hsEscaped} |`);
         }
       } else {
-        tableRows.push(`| ... | ... |`);
+        tableRows.push(`| - ... | - ... |`);
       }
 
       // Hàng cuối: GV Kết luận (nếu có)
