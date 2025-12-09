@@ -3,7 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import LessonPlan from "../models/LessonPlan.model";
 import User from "../models/User.model";
 import Subscription from "../models/Subscription.model";
-import { generateLessonPlan } from "../services/ai.service";
+import { generateLessonPlan, regenerateLessonPlanSection, regenerateActivityRow } from "../services/ai.service";
 import { deleteFiles } from "../services/file.service";
 import {
   Document,
@@ -926,6 +926,243 @@ export const downloadLessonPlan = async (
     res.status(500).json({
       success: false,
       message: "Lỗi khi tải xuống giáo án",
+      error: error.message,
+    });
+  }
+};
+
+export const regenerateSection = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { section } = req.body;
+
+    // Validate section
+    const validSections = [
+      "objectives",
+      "equipment",
+      "activity1",
+      "activity2",
+      "activity3",
+      "activity4",
+      "adjustment",
+    ];
+    if (!section || !validSections.includes(section)) {
+      res.status(400).json({
+        success: false,
+        message: "Phần không hợp lệ",
+      });
+      return;
+    }
+
+    // Find lesson plan
+    const lessonPlan = await LessonPlan.findOne({
+      _id: req.params.id,
+      userId: authReq.user!._id,
+    });
+
+    if (!lessonPlan) {
+      res.status(404).json({
+        success: false,
+        message: "Không tìm thấy giáo án",
+      });
+      return;
+    }
+
+    // Regenerate the section
+    const regeneratedSection = await regenerateLessonPlanSection(
+      {
+        teacherName: lessonPlan.teacherName,
+        subject: lessonPlan.subject,
+        grade: lessonPlan.grade,
+        educationLevel: lessonPlan.educationLevel,
+        duration: lessonPlan.duration,
+        template: lessonPlan.template,
+        lessonTitle: lessonPlan.lessonTitle,
+        uploadedFiles: lessonPlan.uploadedFiles,
+      },
+      lessonPlan.content,
+      section as any,
+      lessonPlan.uploadedFiles
+    );
+
+    // Update the lesson plan with the regenerated section
+    if (section === "objectives") {
+      lessonPlan.content.objectives = regeneratedSection;
+    } else if (section === "equipment") {
+      lessonPlan.content.equipment = regeneratedSection;
+    } else if (section.startsWith("activity")) {
+      lessonPlan.content.activities[section as keyof typeof lessonPlan.content.activities] =
+        regeneratedSection;
+    } else if (section === "adjustment") {
+      lessonPlan.content.adjustment = regeneratedSection;
+    }
+
+    await lessonPlan.save();
+
+    res.json({
+      success: true,
+      message: "Tái tạo phần thành công",
+      data: lessonPlan,
+    });
+  } catch (error: any) {
+    console.error("Error regenerating section:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tái tạo phần",
+      error: error.message,
+    });
+  }
+};
+
+export const regenerateActivityRowController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { activityKey, rowIndex } = req.body;
+
+    // Validate inputs
+    if (!activityKey || typeof rowIndex !== "number" || rowIndex < 0) {
+      res.status(400).json({
+        success: false,
+        message: "Thông tin không hợp lệ",
+      });
+      return;
+    }
+
+    const validActivityKeys = ["activity1", "activity2", "activity3", "activity4"];
+    if (!validActivityKeys.includes(activityKey)) {
+      res.status(400).json({
+        success: false,
+        message: "Hoạt động không hợp lệ",
+      });
+      return;
+    }
+
+    // Find lesson plan
+    const lessonPlan = await LessonPlan.findOne({
+      _id: req.params.id,
+      userId: authReq.user!._id,
+    });
+
+    if (!lessonPlan) {
+      res.status(404).json({
+        success: false,
+        message: "Không tìm thấy giáo án",
+      });
+      return;
+    }
+
+    const activity = lessonPlan.content.activities[
+      activityKey as keyof typeof lessonPlan.content.activities
+    ];
+
+    if (!activity || !activity.content) {
+      res.status(404).json({
+        success: false,
+        message: "Không tìm thấy hoạt động",
+      });
+      return;
+    }
+
+    // Parse markdown table
+    const lines = activity.content.split("\n");
+    const tableLines: string[] = [];
+    let inTable = false;
+    let tableStartIndex = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith("|") && line.includes("Hoạt động của")) {
+        inTable = true;
+        tableStartIndex = i;
+      }
+      if (inTable) {
+        if (line.startsWith("|")) {
+          tableLines.push(line);
+        } else if (line === "" && tableLines.length > 0) {
+          // End of table
+          break;
+        }
+      }
+    }
+
+    if (tableLines.length < 3 || rowIndex >= tableLines.length - 2) {
+      res.status(400).json({
+        success: false,
+        message: "Hàng không hợp lệ",
+      });
+      return;
+    }
+
+    // Regenerate the row
+    const regeneratedRow = await regenerateActivityRow(
+      {
+        teacherName: lessonPlan.teacherName,
+        subject: lessonPlan.subject,
+        grade: lessonPlan.grade,
+        educationLevel: lessonPlan.educationLevel,
+        duration: lessonPlan.duration,
+        template: lessonPlan.template,
+        lessonTitle: lessonPlan.lessonTitle,
+        uploadedFiles: lessonPlan.uploadedFiles,
+      },
+      activity.content,
+      activityKey,
+      rowIndex,
+      lessonPlan.uploadedFiles
+    );
+
+    // Update the row in table
+    const targetRowIndex = rowIndex + 2; // +2 for header and separator
+    const oldRow = tableLines[targetRowIndex];
+    const cells = oldRow.split("|").map((c) => c.trim());
+    
+    // Ensure GV and HS start with "-" (should already be ensured by regenerateActivityRow, but double-check)
+    let gv = regeneratedRow.gv.trim();
+    let hs = regeneratedRow.hs.trim();
+    
+    // Remove leading "-" or "•" if exists, then add "-" to ensure consistency
+    gv = gv.replace(/^[-•]\s*/, "").trim();
+    hs = hs.replace(/^[-•]\s*/, "").trim();
+    
+    // Add "-" prefix
+    gv = gv ? `- ${gv}` : "- ...";
+    hs = hs ? `- ${hs}` : "- ...";
+    
+    // Escape pipe characters
+    const gvEscaped = gv.replace(/\|/g, "\\|");
+    const hsEscaped = hs.replace(/\|/g, "\\|");
+    
+    // Update the row
+    tableLines[targetRowIndex] = `| ${gvEscaped} | ${hsEscaped} |`;
+
+    // Reconstruct the content
+    const beforeTable = lines.slice(0, tableStartIndex).join("\n");
+    const afterTableIndex = tableStartIndex + tableLines.length;
+    const afterTable = lines.slice(afterTableIndex).join("\n");
+    const newTable = tableLines.join("\n");
+    
+    activity.content = [beforeTable, newTable, afterTable]
+      .filter((part) => part.trim())
+      .join("\n\n");
+
+    await lessonPlan.save();
+
+    res.json({
+      success: true,
+      message: "Tái tạo hàng thành công",
+      data: lessonPlan,
+    });
+  } catch (error: any) {
+    console.error("Error regenerating activity row:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tái tạo hàng",
       error: error.message,
     });
   }

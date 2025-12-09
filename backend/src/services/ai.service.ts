@@ -43,7 +43,7 @@ export const generateLessonPlan = async (
     // Note: Make sure Generative Language API is enabled in Google Cloud Console
     const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
     console.log(`Using Gemini model: ${modelName}`);
-
+    
     const model = genAI.getGenerativeModel({
       model: modelName,
       safetySettings: [
@@ -76,7 +76,7 @@ export const generateLessonPlan = async (
         const { pdfTexts, images } = await processFilesForAI(
           input.uploadedFiles
         );
-
+        
         // Add PDF texts to context
         if (pdfTexts.length > 0) {
           fileContext = `\n\nNội dung từ tài liệu đã upload:\n${pdfTexts.join(
@@ -121,7 +121,7 @@ export const generateLessonPlan = async (
       } catch (error: any) {
         lastError = error;
         retries--;
-
+        
         // If it's a 404 error, it means model doesn't exist - don't retry
         if (error.status === 404) {
           console.error(`Model ${modelName} not found. Please check:`);
@@ -136,7 +136,7 @@ export const generateLessonPlan = async (
             `Model ${modelName} not found. Please enable Generative Language API in Google Cloud Console or try a different model.`
           );
         }
-
+        
         if (retries > 0) {
           console.warn(
             `Gemini API error, retrying... (${retries} attempts left)`
@@ -151,7 +151,7 @@ export const generateLessonPlan = async (
     }
 
     const responseText = response.text();
-
+    
     // Check if response is empty or too short
     if (!responseText || responseText.trim().length < 10) {
       console.error("❌ Gemini response is empty or too short");
@@ -168,11 +168,11 @@ export const generateLessonPlan = async (
     // Parse JSON response
     // Declare jsonText outside try block so it's accessible in catch
     let jsonText = responseText.trim();
-
+    
     // Helper function to extract JSON from text (handles markdown code blocks)
     const extractJsonFromText = (text: string): string => {
       let extracted = text.trim();
-
+      
       // Remove markdown code blocks (```json ... ``` or ``` ... ```)
       // Handle multiple code blocks or nested cases
       extracted = extracted.replace(/^```[a-z]*\s*/i, "");
@@ -180,7 +180,7 @@ export const generateLessonPlan = async (
       // Also remove any remaining code block markers in the middle
       extracted = extracted.replace(/```[a-z]*\s*/gi, "");
       extracted = extracted.trim();
-
+      
       // Try to find JSON object if not already extracted
       if (!extracted.startsWith("{")) {
         const jsonMatch = extracted.match(/\{[\s\S]*\}/);
@@ -335,7 +335,7 @@ export const generateLessonPlan = async (
           return match;
         }
       );
-
+      
       // Sanitize JSON: Remove control characters that are not allowed in JSON strings
       // But keep valid escape sequences like \n, \t, \", \\
       jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, (match, offset) => {
@@ -355,7 +355,7 @@ export const generateLessonPlan = async (
         // Remove other control characters
         return "";
       });
-
+      
       // Try to fix common JSON issues before first parse attempt
       // Fix missing commas between properties (more comprehensive)
       jsonText = jsonText.replace(/("\s*)\n\s*(")/g, "$1,\n$2"); // Missing comma between string properties
@@ -365,14 +365,14 @@ export const generateLessonPlan = async (
       jsonText = jsonText.replace(/(\}\s*)\n\s*(")/g, "$1,\n$2"); // Missing comma after object
       jsonText = jsonText.replace(/(\d+)\s*\n\s*(")/g, "$1,\n$2"); // Missing comma after number
       jsonText = jsonText.replace(/(true|false|null)\s*\n\s*(")/g, "$1,\n$2"); // Missing comma after boolean/null
-
+      
       // Fix missing commas without newlines (be careful not to break valid JSON)
       // Only fix when we have clear patterns that indicate missing commas
       jsonText = jsonText.replace(/(\})\s+(")/g, "$1,$2"); // Object followed by string property (with space)
       jsonText = jsonText.replace(/(\])\s+(")/g, "$1,$2"); // Array followed by string property (with space)
       jsonText = jsonText.replace(/(\d+)\s+(")/g, "$1,$2"); // Number followed by string property (with space)
       jsonText = jsonText.replace(/(true|false|null)\s+(")/g, "$1,$2"); // Boolean/null followed by string property (with space)
-
+      
       // Remove duplicate commas and trailing commas
       jsonText = jsonText.replace(/,\s*,/g, ","); // Remove duplicate commas
       jsonText = jsonText.replace(/,\s*([}\]])/g, "$1"); // Remove trailing commas
@@ -521,7 +521,7 @@ export const generateLessonPlan = async (
       // Check error type to determine fix strategy
       const isMissingCommaError =
         parseError.message?.includes("Expected ','") ||
-        parseError.message?.includes("Expected '}'");
+                                 parseError.message?.includes("Expected '}'");
       const isMissingColonError =
         parseError.message?.includes("Expected ':'") ||
         parseError.message?.includes("after property name");
@@ -594,17 +594,17 @@ export const generateLessonPlan = async (
         // Re-extract jsonText from responseText for error fixing
         let jsonTextForFix = extractJsonFromText(responseText);
         jsonTextForFix = cleanEllipsis(jsonTextForFix);
-
+        
         // Extract position from error message if available
         const positionMatch = parseError.message?.match(/position (\d+)/);
         const errorPosition = positionMatch ? parseInt(positionMatch[1]) : -1;
-
+        
         if (errorPosition > 0 && errorPosition < jsonTextForFix.length) {
           // Try to fix by inserting a comma before the error position
           // Look backwards for the end of a value (quote, }, ], number, true/false/null)
           let fixedJson = jsonTextForFix;
           let insertPos = errorPosition;
-
+          
           // Find where to insert comma (before the error position, after a value)
           for (
             let i = errorPosition - 1;
@@ -629,7 +629,7 @@ export const generateLessonPlan = async (
               }
             }
           }
-
+          
           // Only insert comma if we found a good position and there's no comma already
           if (insertPos < errorPosition && fixedJson[insertPos] !== ",") {
             fixedJson =
@@ -648,17 +648,17 @@ export const generateLessonPlan = async (
           }
         }
       }
-
+      
       // Log as warning instead of error since we'll try to fix it
       console.warn(
         "⚠️ JSON parsing issue detected (will attempt to fix):",
         parseError.message
       );
-
+      
       // Extract position from error message if available
       const positionMatch = parseError.message?.match(/position (\d+)/);
       const errorPosition = positionMatch ? parseInt(positionMatch[1]) : -1;
-
+      
       // Only log detailed context in debug mode or if error position is available
       if (
         errorPosition > 0 &&
@@ -672,7 +672,7 @@ export const generateLessonPlan = async (
         console.warn(">>> ERROR HERE <<<");
         console.warn(responseText.substring(errorPosition, end) + "...");
       }
-
+      
       // Try to extract and fix JSON more aggressively
       try {
         // Check if response is empty
@@ -682,20 +682,20 @@ export const generateLessonPlan = async (
 
         let jsonText = extractJsonFromText(responseText);
         jsonText = cleanEllipsis(jsonText);
-
+        
         // Check again
         if (!jsonText || jsonText.length < 10) {
           throw new Error("Response text is empty after removing markdown");
         }
-
+        
         // Find the JSON object
         const startIdx = jsonText.indexOf("{");
         let lastIdx = jsonText.lastIndexOf("}");
-
+        
         if (startIdx === -1) {
           throw new Error("No opening brace found in response");
         }
-
+        
         // If JSON seems incomplete (no closing brace or incomplete), try to fix it
         if (startIdx !== -1) {
           if (lastIdx === -1 || lastIdx <= startIdx) {
@@ -704,25 +704,25 @@ export const generateLessonPlan = async (
             let braceCount = 0;
             let inString = false;
             let escapeNext = false;
-
+            
             for (let i = startIdx; i < jsonText.length; i++) {
               const char = jsonText[i];
-
+              
               if (escapeNext) {
                 escapeNext = false;
                 continue;
               }
-
+              
               if (char === "\\") {
                 escapeNext = true;
                 continue;
               }
-
+              
               if (char === '"' && !escapeNext) {
                 inString = !inString;
                 continue;
               }
-
+              
               if (!inString) {
                 if (char === "{") braceCount++;
                 if (char === "}") {
@@ -734,7 +734,7 @@ export const generateLessonPlan = async (
                 }
               }
             }
-
+            
             // If still incomplete, try to close it properly
             if (braceCount > 0) {
               // Close all open braces and strings
@@ -745,7 +745,7 @@ export const generateLessonPlan = async (
               lastIdx = jsonText.length - 1;
             }
           }
-
+          
           if (lastIdx !== -1 && lastIdx > startIdx) {
             jsonText = jsonText.substring(startIdx, lastIdx + 1);
           } else if (startIdx !== -1) {
@@ -763,7 +763,7 @@ export const generateLessonPlan = async (
             }
           }
         }
-
+        
         // Fix common JSON syntax errors before fixing control characters
         // Fix missing commas between properties (comprehensive fix)
         jsonText = jsonText.replace(/("\s*)\n\s*(")/g, "$1,\n$2"); // Missing comma between string properties
@@ -773,33 +773,33 @@ export const generateLessonPlan = async (
         jsonText = jsonText.replace(/(\}\s*)\n\s*(")/g, "$1,\n$2"); // Missing comma after object
         jsonText = jsonText.replace(/(\d+)\s*\n\s*(")/g, "$1,\n$2"); // Missing comma after number
         jsonText = jsonText.replace(/(true|false|null)\s*\n\s*(")/g, "$1,\n$2"); // Missing comma after boolean/null
-
+        
         // Fix missing commas without newlines (be careful not to break valid JSON)
         // Only fix when we have clear patterns that indicate missing commas
         jsonText = jsonText.replace(/(\})\s+(")/g, "$1,$2"); // Object followed by string property (with space)
         jsonText = jsonText.replace(/(\])\s+(")/g, "$1,$2"); // Array followed by string property (with space)
         jsonText = jsonText.replace(/(\d+)\s+(")/g, "$1,$2"); // Number followed by string property (with space)
         jsonText = jsonText.replace(/(true|false|null)\s+(")/g, "$1,$2"); // Boolean/null followed by string property (with space)
-
+        
         // Remove duplicate commas and trailing commas
         jsonText = jsonText.replace(/,\s*,/g, ","); // Remove duplicate commas
         jsonText = jsonText.replace(/,\s*([}\]])/g, "$1"); // Remove trailing commas
-
+        
         // Fix control characters in JSON strings
         // This function escapes control characters that are inside string literals
         let fixedJson = "";
         let inString = false;
         let escapeCount = 0; // Count consecutive backslashes
-
+        
         for (let i = 0; i < jsonText.length; i++) {
           const char = jsonText[i];
-
+          
           if (char === "\\") {
             escapeCount++;
             fixedJson += char;
             continue;
           }
-
+          
           if (char === '"') {
             // Check if this quote is escaped (odd number of backslashes before it)
             if (escapeCount % 2 === 0) {
@@ -810,10 +810,10 @@ export const generateLessonPlan = async (
             fixedJson += char;
             continue;
           }
-
+          
           // Reset escape count for non-backslash, non-quote characters
           escapeCount = 0;
-
+          
           if (inString) {
             // Inside a string - escape control characters
             const charCode = char.charCodeAt(0);
@@ -850,12 +850,12 @@ export const generateLessonPlan = async (
             // Skip other control characters outside strings
           }
         }
-
+        
         // Close any remaining open strings or structures
         if (inString) {
           fixedJson += '"';
         }
-
+        
         // Ensure JSON is properly closed
         const openBraces = (fixedJson.match(/\{/g) || []).length;
         const closeBraces = (fixedJson.match(/\}/g) || []).length;
@@ -863,7 +863,7 @@ export const generateLessonPlan = async (
         for (let i = 0; i < needed; i++) {
           fixedJson += "}";
         }
-
+        
         const parsed = JSON.parse(fixedJson);
         console.log(
           "✅ Successfully fixed and parsed JSON on second attempt (initial parse had minor formatting issues)"
@@ -872,51 +872,51 @@ export const generateLessonPlan = async (
       } catch (secondParseError: any) {
         console.error("Second parse attempt also failed:", secondParseError);
         console.error("Second error position:", secondParseError.message);
-
+        
         // Try one more time with even more aggressive fixes
         try {
           let jsonText = extractJsonFromText(responseText);
           jsonText = cleanEllipsis(jsonText);
-
+          
           const startIdx = jsonText.indexOf("{");
           const lastIdx = jsonText.lastIndexOf("}");
           if (startIdx !== -1 && lastIdx > startIdx) {
             jsonText = jsonText.substring(startIdx, lastIdx + 1);
           }
-
+          
           // More aggressive fixes for missing commas
           jsonText = jsonText.replace(/,\s*,/g, ","); // Remove duplicate commas
           jsonText = jsonText.replace(/,\s*([}\]])/g, "$1"); // Remove trailing commas
           jsonText = jsonText.replace(/([}\]"])\s*\n\s*(")/g, "$1,\n$2"); // Missing comma between properties
           jsonText = jsonText.replace(/([}\]"])\s*\n\s*(\[)/g, "$1,\n$2");
           jsonText = jsonText.replace(/([}\]"])\s*\n\s*(\{)/g, "$1,\n$2");
-
+          
           // Clean up control characters
           let finalJson = "";
           let inStringFinal = false;
           let escapeNextFinal = false;
-
+          
           for (let i = 0; i < jsonText.length; i++) {
             const char = jsonText[i];
-
+            
             if (escapeNextFinal) {
               finalJson += char;
               escapeNextFinal = false;
               continue;
             }
-
+            
             if (char === "\\") {
               finalJson += char;
               escapeNextFinal = true;
               continue;
             }
-
+            
             if (char === '"') {
               inStringFinal = !inStringFinal;
               finalJson += char;
               continue;
             }
-
+            
             if (inStringFinal) {
               const charCode = char.charCodeAt(0);
               if (char === "\n") {
@@ -939,7 +939,7 @@ export const generateLessonPlan = async (
               }
             }
           }
-
+          
           // Close any open structures
           if (inStringFinal) {
             finalJson += '"';
@@ -950,13 +950,13 @@ export const generateLessonPlan = async (
           for (let i = 0; i < needed; i++) {
             finalJson += "}";
           }
-
+          
           const parsed = JSON.parse(finalJson);
           console.log("✅ Successfully parsed JSON on third attempt");
           return validateAndFormatLessonPlan(parsed, input);
         } catch (thirdParseError) {
           console.error("Third parse attempt also failed:", thirdParseError);
-
+          
           // Log response details
           if (responseText && responseText.length > 0) {
             console.error("Response text length:", responseText.length);
@@ -968,7 +968,7 @@ export const generateLessonPlan = async (
               "Response text (last 500 chars):",
               responseText.substring(Math.max(0, responseText.length - 500))
             );
-
+            
             // Log the problematic JSON section if we have position info
             if (errorPosition > 0 && errorPosition < responseText.length) {
               const problemStart = Math.max(0, errorPosition - 100);
@@ -986,7 +986,7 @@ export const generateLessonPlan = async (
             console.error("2. Response was truncated or cut off");
             console.error("3. Network/connection issue");
           }
-
+          
           return generateMockLessonPlan(input);
         }
       }
@@ -1407,18 +1407,18 @@ const validateAndFormatLessonPlan = (
       const mucTieu = toArray(hoatDong.muc_tieu);
       const gv = toArray(hoatDong.to_chuc?.giao_vien);
       const hs = toArray(hoatDong.to_chuc?.hoc_sinh);
-
+      
       // Hàng 1: Tên hoạt động
       tableRows.push(`| **${tenHoatDong}** | |`);
-
+      
       // Hàng 2: Mục tiêu
       const mucTieuText =
         mucTieu.length > 0 ? mucTieu.map((m) => m.trim()).join(" ") : "...";
       tableRows.push(`| **- Mục tiêu:** ${mucTieuText} | |`);
-
+      
       // Hàng 3: Cách tiến hành
       tableRows.push(`| **- Cách tiến hành:** | |`);
-
+      
       // Các hàng tiếp theo: Các bước thực hiện
       // Lọc bỏ các rows có chứa "Mục tiêu" hoặc "Cách tiến hành" vì đã thêm ở trên
       if (gv.length > 0 || hs.length > 0) {
@@ -1456,7 +1456,7 @@ const validateAndFormatLessonPlan = (
       } else {
         tableRows.push(`| - ... | - ... |`);
       }
-
+      
       // Hàng cuối: GV Kết luận (nếu có)
       const ketLuan = gv.find(
         (text: string) =>
@@ -1482,7 +1482,7 @@ const validateAndFormatLessonPlan = (
 
       // Tạo 1 bảng duy nhất cho tất cả hoạt động trong tiết
       const tableRows: string[] = [];
-      tableRows.push("| **Hoạt động của GV** | **Hoạt động của HS** |");
+      tableRows.push("| Hoạt động của GV | Hoạt động của HS |");
       tableRows.push("|----------------------|----------------------|");
 
       // Thêm từng hoạt động vào bảng
@@ -1509,7 +1509,7 @@ const validateAndFormatLessonPlan = (
 
       // Luôn hiển thị số tiết: "TIẾT 1 (1 tiết)" hoặc "TIẾT 1 (2 tiết)"
       const title = `TIẾT ${soTiet} (${totalTiets} tiết)`;
-
+      
       return {
         title,
         content: tableRows.join("\n"),
@@ -1531,7 +1531,7 @@ const validateAndFormatLessonPlan = (
       tietKeys,
       soTiet,
     });
-
+    
     // Tạo activities - Model yêu cầu 4 activities bắt buộc
     let activities: {
       activity1: { title: string; content: string };
@@ -1557,14 +1557,14 @@ const validateAndFormatLessonPlan = (
       // Tạo activities - Model yêu cầu 4 activities bắt buộc
       // Nếu chỉ có 1 tiết, chỉ activity1 có nội dung, các activity khác để trống
       const emptyActivity = { title: "", content: "" };
-
+      
       activities = {
         activity1: formattedTiets[0] || emptyActivity,
         activity2: formattedTiets[1] || emptyActivity,
         activity3: formattedTiets[2] || emptyActivity,
         activity4: formattedTiets[3] || emptyActivity,
       };
-
+      
       // Nếu có nhiều hơn 4 tiết, gộp các tiết còn lại vào activity4
       if (formattedTiets.length > 4) {
         const remainingTiets = formattedTiets
@@ -1608,12 +1608,12 @@ const validateAndFormatLessonPlan = (
             const maxRows = Math.max(gv.length, hs.length);
             const tableRows: string[] = [];
             tableRows.push(
-              "| **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |"
+              "| Hoạt động của Giáo viên | Hoạt động của Học sinh |"
             );
             tableRows.push(
               "|------------------------------|----------------------------|"
             );
-
+            
             for (let i = 0; i < maxRows; i++) {
               const gvText = gv[i] || "";
               const hsText = hs[i] || "";
@@ -1625,7 +1625,7 @@ const validateAndFormatLessonPlan = (
             toChucTable = tableRows.join("\n");
           } else {
             toChucTable =
-              "| **Hoạt động của Giáo viên** | **Hoạt động của Học sinh** |\n|------------------------------|----------------------------|\n| ... | ... |";
+              "| Hoạt động của Giáo viên | Hoạt động của Học sinh |\n|------------------------------|----------------------------|\n| ... | ... |";
           }
 
           return [
@@ -2090,4 +2090,673 @@ const generateMockLessonPlan = async (
   };
 
   return content;
+};
+
+/**
+ * Regenerate a specific section of a lesson plan
+ */
+export const regenerateLessonPlanSection = async (
+  input: LessonPlanInput,
+  existingContent: ILessonPlan["content"],
+  section: "objectives" | "equipment" | "activity1" | "activity2" | "activity3" | "activity4" | "adjustment",
+  uploadedFiles?: string[]
+): Promise<any> => {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+
+  // Fallback to mock if no API key
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY not found, using mock service");
+    return existingContent[section as keyof typeof existingContent];
+  }
+
+  try {
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+      ],
+    });
+
+    // Process uploaded files
+    let fileContext = "";
+    let imageCount = 0;
+    const parts: Part[] = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      try {
+        const { pdfTexts, images } = await processFilesForAI(uploadedFiles);
+
+        if (pdfTexts.length > 0) {
+          fileContext = `\n\nNội dung từ tài liệu đã upload:\n${pdfTexts.join(
+            "\n\n---\n\n"
+          )}`;
+        }
+
+        imageCount = images.length;
+        for (const image of images) {
+          parts.push({
+            inlineData: {
+              data: image.base64,
+              mimeType: image.mimeType,
+            },
+          } as Part);
+        }
+      } catch (error: any) {
+        console.error("Error processing files:", error);
+      }
+    }
+
+    // Build prompt for specific section
+    const prompt = buildSectionPrompt(input, existingContent, section, fileContext, imageCount);
+
+    // Add text prompt as first part
+    parts.unshift({ text: prompt } as Part);
+
+    // Generate content with retry logic
+    let response;
+    let retries = 3;
+    let lastError: Error | null = null;
+
+    while (retries > 0) {
+      try {
+        const result = await model.generateContent(parts);
+        response = result.response;
+        break;
+      } catch (error: any) {
+        lastError = error;
+        retries--;
+
+        if (error.status === 404) {
+          throw new Error(
+            `Model ${modelName} not found. Please enable Generative Language API in Google Cloud Console or try a different model.`
+          );
+        }
+
+        if (retries > 0) {
+          console.warn(
+            `Gemini API error, retrying... (${retries} attempts left)`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error("Failed to generate response from Gemini");
+    }
+
+    const responseText = response.text();
+
+    if (!responseText || responseText.trim().length < 10) {
+      throw new Error("Gemini returned an empty response. Please try again.");
+    }
+
+    // Parse JSON response
+    let jsonText = responseText.trim();
+
+    // Extract JSON from markdown code blocks if present
+    const extractJsonFromText = (text: string): string => {
+      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        return jsonMatch[1].trim();
+      }
+      return text.trim();
+    };
+
+    jsonText = extractJsonFromText(jsonText);
+
+    // Parse JSON
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (parseError: any) {
+      // Try to fix common JSON issues
+      jsonText = jsonText.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (e) {
+        throw new Error(`Failed to parse JSON: ${parseError.message}`);
+      }
+    }
+
+    // Extract the section from parsed response
+    // The parsed response should have the section as a direct property
+    if (parsed && parsed[section]) {
+      return parsed[section];
+    }
+    
+    // If section is nested (e.g., parsed.activity1 instead of parsed.activities.activity1)
+    // Handle activity sections specially
+    if (section.startsWith("activity")) {
+      if (parsed && parsed[section]) {
+        return parsed[section];
+      }
+    }
+    
+    // Fallback to existing content if parsing failed
+    return existingContent[section as keyof typeof existingContent];
+  } catch (error: any) {
+    console.error("Error regenerating section:", error);
+    throw error;
+  }
+};
+
+/**
+ * Build prompt for regenerating a specific section
+ */
+const buildSectionPrompt = (
+  input: LessonPlanInput,
+  existingContent: ILessonPlan["content"],
+  section: string,
+  fileContext: string,
+  imageCount: number = 0
+): string => {
+  const {
+    teacherName,
+    subject,
+    grade,
+    educationLevel,
+    lessonTitle,
+    duration,
+    template,
+  } = input;
+
+  const sectionPrompts: Record<string, string> = {
+    objectives: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại phần "I. YÊU CẦU CẦN ĐẠT" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Phần I. YÊU CẦU CẦN ĐẠT chỉ có 3 mục con (KHÔNG có phần "Kiến thức"):
+1. **Năng lực đặc thù** (dựa vào mục tiêu của bài, gắn với môn ${subject})
+   - Mỗi năng lực đặc thù phải được liệt kê bằng dấu gạch đầu dòng (-)
+2. **Năng lực chung** (Tự chủ, tự học, giao tiếp, hợp tác, giải quyết vấn đề)
+   - Mỗi năng lực chung phải được liệt kê bằng dấu gạch đầu dòng (-)
+3. **Phẩm chất** (Yêu nước, nhân ái, chăm chỉ, trung thực, trách nhiệm)
+   - Mỗi phẩm chất phải được liệt kê bằng dấu gạch đầu dòng (-)
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "objectives": {
+    "knowledge": "",
+    "competencies": {
+      "general": ["- Năng lực chung 1", "- Năng lực chung 2"],
+      "specific": ["- Năng lực đặc thù 1", "- Năng lực đặc thù 2"]
+    },
+    "qualities": ["- Phẩm chất 1", "- Phẩm chất 2"]
+  }
+}`,
+
+    equipment: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại phần "II. ĐỒ DÙNG DẠY HỌC" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Format phải là một dòng duy nhất cho mỗi phần (KHÔNG phải list):
+- **Giáo viên:** [liệt kê TẤT CẢ thiết bị, đồ dùng cho giáo viên trong MỘT dòng, cách nhau bằng dấu phẩy hoặc dấu chấm phẩy]
+- **Học sinh:** [liệt kê TẤT CẢ thiết bị, đồ dùng cho học sinh trong MỘT dòng, cách nhau bằng dấu phẩy hoặc dấu chấm phẩy]
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "equipment": {
+    "teacher": ["SGK, SGV, Máy tính, máy chiếu, ..."],
+    "student": ["Sách giáo khoa, Vở, Bút, ..."]
+  }
+}`,
+
+    activity1: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại "Hoạt động 1: Mở đầu (Khởi động, Xác định vấn đề)" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Tạo nội dung cho Hoạt động 1 với định dạng markdown, sử dụng bảng 2 cột để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song.
+
+**RẤT QUAN TRỌNG:** Mỗi hoạt động của GV và HS trong bảng PHẢI bắt đầu bằng dấu "-". Ví dụ: "- GV đặt câu hỏi..." hoặc "- HS quan sát...". KHÔNG được để các hoạt động không có dấu "-" ở đầu.
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "activity1": {
+    "title": "Hoạt động 1: Mở đầu (Khởi động, Xác định vấn đề)",
+    "content": "**Thời gian:** 5-7 phút\\n\\n| Hoạt động của Giáo viên | Hoạt động của Học sinh |\\n|------------------------------|----------------------------|\\n| - GV đặt câu hỏi: *\\\"Các em thấy gì?\\\"* | - HS quan sát và trả lời |\\n| - ... | - ... |"
+  }
+}`,
+
+    activity2: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại "Hoạt động 2: Hình thành kiến thức mới" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Tạo nội dung cho Hoạt động 2 với định dạng markdown, sử dụng bảng 2 cột để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song.
+
+**RẤT QUAN TRỌNG:** Mỗi hoạt động của GV và HS trong bảng PHẢI bắt đầu bằng dấu "-". Ví dụ: "- GV trình bày..." hoặc "- HS lắng nghe...". KHÔNG được để các hoạt động không có dấu "-" ở đầu.
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "activity2": {
+    "title": "Hoạt động 2: Hình thành kiến thức mới",
+    "content": "**Thời gian:** ${Math.floor(duration * 0.4)} phút\\n\\n| Hoạt động của Giáo viên | Hoạt động của Học sinh |\\n|------------------------------|----------------------------|\\n| - GV trình bày nội dung... | - HS lắng nghe... |\\n| - ... | - ... |"
+  }
+}`,
+
+    activity3: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại "Hoạt động 3: Luyện tập (Thực hành, củng cố)" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Tạo nội dung cho Hoạt động 3 với định dạng markdown, sử dụng bảng 2 cột để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song.
+
+**RẤT QUAN TRỌNG:** Mỗi hoạt động của GV và HS trong bảng PHẢI bắt đầu bằng dấu "-". Ví dụ: "- GV hướng dẫn..." hoặc "- HS thực hành...". KHÔNG được để các hoạt động không có dấu "-" ở đầu.
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "activity3": {
+    "title": "Hoạt động 3: Luyện tập (Thực hành, củng cố)",
+    "content": "**Thời gian:** ${Math.floor(duration * 0.3)} phút\\n\\n| Hoạt động của Giáo viên | Hoạt động của Học sinh |\\n|------------------------------|----------------------------|\\n| - GV hướng dẫn HS làm bài tập... | - HS thực hành... |\\n| - ... | - ... |"
+  }
+}`,
+
+    activity4: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại "Hoạt động 4: Vận dụng/Tìm tòi mở rộng" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+YÊU CẦU:
+Tạo nội dung cho Hoạt động 4 với định dạng markdown, sử dụng bảng 2 cột để trình bày "Hoạt động của Giáo viên" và "Hoạt động của Học sinh" song song.
+
+**RẤT QUAN TRỌNG:** Mỗi hoạt động của GV và HS trong bảng PHẢI bắt đầu bằng dấu "-". Ví dụ: "- GV hướng dẫn..." hoặc "- HS vận dụng...". KHÔNG được để các hoạt động không có dấu "-" ở đầu.
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "activity4": {
+    "title": "Hoạt động 4: Vận dụng/Tìm tòi mở rộng",
+    "content": "**Thời gian:** ${Math.floor(duration * 0.2)} phút\\n\\n| Hoạt động của Giáo viên | Hoạt động của Học sinh |\\n|------------------------------|----------------------------|\\n| - GV hướng dẫn HS vận dụng... | - HS vận dụng kiến thức... |\\n| - ... | - ... |"
+  }
+}`,
+
+    adjustment: `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại phần "IV. ĐIỀU CHỈNH SAU BÀI DẠY" cho giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${teacherName}
+- Môn học: ${subject}
+- Tên bài học: ${lessonTitle}
+- Lớp: ${grade}
+- Cấp học: ${educationLevel}
+- Thời lượng: ${duration} phút
+
+YÊU CẦU:
+Phần "Nhận xét chung" CHỈ điền khoảng 50-100 dấu chấm (ví dụ: "................................................................................"), KHÔNG đưa bất kỳ nội dung nào khác.
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "adjustment": {
+    "nhanXet": "................................................................................",
+    "huongDieuChinh": []
+  }
+}`,
+  };
+
+  return sectionPrompts[section] || "";
+};
+
+/**
+ * Regenerate a specific row in an activity table
+ */
+export const regenerateActivityRow = async (
+  input: LessonPlanInput,
+  activityContent: string,
+  activityKey: string,
+  rowIndex: number,
+  uploadedFiles?: string[]
+): Promise<{ gv: string; hs: string }> => {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY not found, using fallback");
+    return { gv: "- ...", hs: "- ..." };
+  }
+
+  try {
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        },
+      ],
+    });
+
+    // Process uploaded files
+    let fileContext = "";
+    let imageCount = 0;
+    const parts: Part[] = [];
+
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      try {
+        const { pdfTexts, images } = await processFilesForAI(uploadedFiles);
+
+        if (pdfTexts.length > 0) {
+          fileContext = `\n\nNội dung từ tài liệu đã upload:\n${pdfTexts.join(
+            "\n\n---\n\n"
+          )}`;
+        }
+
+        imageCount = images.length;
+        for (const image of images) {
+          parts.push({
+            inlineData: {
+              data: image.base64,
+              mimeType: image.mimeType,
+            },
+          } as Part);
+        }
+      } catch (error: any) {
+        console.error("Error processing files:", error);
+      }
+    }
+
+    // Parse table to get context
+    const tableLines = activityContent
+      .split("\n")
+      .filter((line) => line.trim().startsWith("|"));
+    const currentRow = tableLines[rowIndex + 2]; // +2 for header and separator
+    const currentGv = currentRow
+      ? currentRow.split("|")[1]?.trim() || ""
+      : "";
+    const currentHs = currentRow
+      ? currentRow.split("|")[2]?.trim() || ""
+      : "";
+
+    // Get surrounding rows for context
+    const prevRow =
+      rowIndex > 0 && tableLines[rowIndex + 1]
+        ? tableLines[rowIndex + 1].split("|").slice(1, 3).map((c) => c.trim())
+        : null;
+    const nextRow =
+      rowIndex < tableLines.length - 3 && tableLines[rowIndex + 3]
+        ? tableLines[rowIndex + 3].split("|").slice(1, 3).map((c) => c.trim())
+        : null;
+
+    // Build prompt
+    const prompt = `Bạn là một Trợ lý AI chuyên môn. Nhiệm vụ của bạn là tái tạo lại một hàng cụ thể trong bảng hoạt động của giáo án.
+
+THÔNG TIN BÀI HỌC:
+- Giáo viên: ${input.teacherName}
+- Môn học: ${input.subject}
+- Tên bài học: ${input.lessonTitle}
+- Lớp: ${input.grade}
+- Cấp học: ${input.educationLevel}
+- Thời lượng: ${input.duration} phút
+- Hoạt động: ${activityKey}
+
+NỘI DUNG THAM KHẢO TỪ TÀI LIỆU ĐÃ UPLOAD (NẾU CÓ):
+${fileContext || "Không có tài liệu được upload"}
+
+HÌNH ẢNH ĐÃ UPLOAD (NẾU CÓ):
+${
+  imageCount > 0
+    ? `Có ${imageCount} hình ảnh đã được upload. Hãy xem kỹ các hình ảnh này để hiểu nội dung bài học.`
+    : "Không có hình ảnh được upload"
+}
+
+NGỮ CẢNH:
+Đây là hàng thứ ${rowIndex + 1} trong bảng hoạt động.
+${prevRow ? `Hàng trước đó:\n- GV: ${prevRow[0]}\n- HS: ${prevRow[1]}` : ""}
+${nextRow ? `Hàng sau đó:\n- GV: ${nextRow[0]}\n- HS: ${nextRow[1]}` : ""}
+
+YÊU CẦU:
+Tái tạo lại hàng này với nội dung phù hợp với ngữ cảnh và bài học. Hãy đảm bảo:
+- Hoạt động của GV và HS phải tương ứng với nhau (cùng một bước trong quá trình dạy học)
+- Nội dung phải phù hợp với hàng trước và sau (nếu có)
+- Sử dụng định dạng markdown: có thể dùng **in đậm**, *in nghiêng* cho lời thoại
+- **RẤT QUAN TRỌNG:** Mỗi hoạt động của GV và HS PHẢI bắt đầu bằng dấu "-" (không có dấu cách sau dấu "-" hoặc có một dấu cách). Ví dụ: "- GV đặt câu hỏi..." hoặc "- HS quan sát..."
+- KHÔNG được trả về nội dung không có dấu "-" ở đầu
+
+Hãy trả về kết quả dưới dạng JSON với cấu trúc sau (chỉ trả về JSON, không có markdown hay text khác):
+
+{
+  "gv": "- GV đặt câu hỏi: *\\\"Các em thấy gì?\\\"*",
+  "hs": "- HS quan sát và trả lời"
+}
+
+LƯU Ý: Cả "gv" và "hs" PHẢI bắt đầu bằng dấu "-" trong JSON response.`;
+
+    parts.unshift({ text: prompt } as Part);
+
+    // Generate content with retry logic
+    let response;
+    let retries = 3;
+    let lastError: Error | null = null;
+
+    while (retries > 0) {
+      try {
+        const result = await model.generateContent(parts);
+        response = result.response;
+        break;
+      } catch (error: any) {
+        lastError = error;
+        retries--;
+
+        if (error.status === 404) {
+          throw new Error(
+            `Model ${modelName} not found. Please enable Generative Language API in Google Cloud Console or try a different model.`
+          );
+        }
+
+        if (retries > 0) {
+          console.warn(
+            `Gemini API error, retrying... (${retries} attempts left)`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error("Failed to generate response from Gemini");
+    }
+
+    const responseText = response.text();
+
+    if (!responseText || responseText.trim().length < 10) {
+      throw new Error("Gemini returned an empty response. Please try again.");
+    }
+
+    // Parse JSON response
+    let jsonText = responseText.trim();
+
+    // Extract JSON from markdown code blocks if present
+    const extractJsonFromText = (text: string): string => {
+      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        return jsonMatch[1].trim();
+      }
+      return text.trim();
+    };
+
+    jsonText = extractJsonFromText(jsonText);
+
+    // Parse JSON
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (parseError: any) {
+      // Try to fix common JSON issues
+      jsonText = jsonText.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch (e) {
+        throw new Error(`Failed to parse JSON: ${parseError.message}`);
+      }
+    }
+
+    // Extract GV and HS
+    if (parsed && parsed.gv && parsed.hs) {
+      // Ensure they start with "-" if not already
+      let gv = parsed.gv.trim();
+      let hs = parsed.hs.trim();
+      
+      // Remove leading "-" or "•" if exists, then add "-" to ensure consistency
+      gv = gv.replace(/^[-•]\s*/, "").trim();
+      hs = hs.replace(/^[-•]\s*/, "").trim();
+      
+      // Add "-" prefix
+      gv = gv ? `- ${gv}` : "- ...";
+      hs = hs ? `- ${hs}` : "- ...";
+      
+      return { gv, hs };
+    }
+
+    // Fallback - ensure current values also have "-"
+    let fallbackGv = currentGv.trim();
+    let fallbackHs = currentHs.trim();
+    
+    // Remove leading "-" or "•" if exists, then add "-"
+    fallbackGv = fallbackGv.replace(/^[-•]\s*/, "").trim();
+    fallbackHs = fallbackHs.replace(/^[-•]\s*/, "").trim();
+    
+    // Add "-" prefix
+    fallbackGv = fallbackGv ? `- ${fallbackGv}` : "- ...";
+    fallbackHs = fallbackHs ? `- ${fallbackHs}` : "- ...";
+    
+    return { gv: fallbackGv, hs: fallbackHs };
+  } catch (error: any) {
+    console.error("Error regenerating activity row:", error);
+    throw error;
+  }
 };

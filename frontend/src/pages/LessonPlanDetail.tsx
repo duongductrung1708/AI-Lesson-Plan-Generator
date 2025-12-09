@@ -7,7 +7,9 @@ import remarkGfm from "remark-gfm";
 import DownloadIcon from "@mui/icons-material/Download";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, useTheme } from "@mui/material/styles";
+import { IconButton, CircularProgress } from "@mui/material";
 
 interface LessonPlan {
   _id: string;
@@ -50,6 +52,8 @@ const LessonPlanDetail = () => {
   const navigate = useNavigate();
   const [lessonPlan, setLessonPlan] = useState<LessonPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
+  const [regeneratingRow, setRegeneratingRow] = useState<{ activityKey: string; rowIndex: number } | null>(null);
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
@@ -98,6 +102,57 @@ const LessonPlanDetail = () => {
     } catch (error: any) {
       console.error("Download error:", error);
       toast.error("Không tải được giáo án. Vui lòng thử lại.");
+    }
+  };
+
+  const handleRegenerate = async (section: string) => {
+    if (!lessonPlan || !id) return;
+    
+    setRegeneratingSection(section);
+    try {
+      const response = await axios.patch(`/api/lesson-plans/${id}/regenerate`, {
+        section,
+      });
+
+      setLessonPlan(response.data.data);
+      toast.success("Tái tạo phần thành công!");
+    } catch (error: any) {
+      console.error("Regenerate error:", error);
+      const errorMessage = error.response?.data?.message || "Lỗi khi tái tạo phần. Vui lòng thử lại.";
+      
+      if (error.response?.status === 403 && errorMessage.includes('subscription')) {
+        toast.error("Bạn cần đăng ký gói để sử dụng dịch vụ AI");
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setRegeneratingSection(null);
+    }
+  };
+
+  const handleRegenerateRow = async (activityKey: string, rowIndex: number) => {
+    if (!lessonPlan || !id) return;
+    
+    setRegeneratingRow({ activityKey, rowIndex });
+    try {
+      const response = await axios.patch(`/api/lesson-plans/${id}/regenerate-row`, {
+        activityKey,
+        rowIndex,
+      });
+
+      setLessonPlan(response.data.data);
+      toast.success("Tái tạo hàng thành công!");
+    } catch (error: any) {
+      console.error("Regenerate row error:", error);
+      const errorMessage = error.response?.data?.message || "Lỗi khi tái tạo hàng. Vui lòng thử lại.";
+      
+      if (error.response?.status === 403 && errorMessage.includes('subscription')) {
+        toast.error("Bạn cần đăng ký gói để sử dụng dịch vụ AI");
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setRegeneratingRow(null);
     }
   };
 
@@ -220,13 +275,33 @@ const LessonPlanDetail = () => {
         <div className="space-y-6">
           {/* Objectives Section */}
           <div className="p-6 card md:p-8 animate-slide-up">
-            <div className="flex items-center mb-6 space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
-                <span className="font-bold text-white">I</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
+                  <span className="font-bold text-white">I</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                  YÊU CẦU CẦN ĐẠT
+                </h2>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                YÊU CẦU CẦN ĐẠT
-              </h2>
+              <IconButton
+                onClick={() => handleRegenerate("objectives")}
+                disabled={regeneratingSection === "objectives"}
+                size="small"
+                sx={{
+                  color: theme.palette.primary.main,
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  },
+                }}
+                title="Tái tạo phần này"
+              >
+                {regeneratingSection === "objectives" ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  <RefreshIcon />
+                )}
+              </IconButton>
             </div>
 
             <div className="space-y-6">
@@ -314,13 +389,33 @@ const LessonPlanDetail = () => {
 
           {/* Equipment Section */}
           <div className="p-6 card md:p-8 animate-slide-up">
-            <div className="flex items-center mb-6 space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
-                <span className="font-bold text-white">II</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
+                  <span className="font-bold text-white">II</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                  ĐỒ DÙNG DẠY HỌC
+                </h2>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                ĐỒ DÙNG DẠY HỌC
-              </h2>
+              <IconButton
+                onClick={() => handleRegenerate("equipment")}
+                disabled={regeneratingSection === "equipment"}
+                size="small"
+                sx={{
+                  color: theme.palette.success.main,
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.success.main, 0.1),
+                  },
+                }}
+                title="Tái tạo phần này"
+              >
+                {regeneratingSection === "equipment" ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  <RefreshIcon />
+                )}
+              </IconButton>
             </div>
 
             <div className="space-y-4">
@@ -355,13 +450,15 @@ const LessonPlanDetail = () => {
 
           {/* Activities Section */}
           <div className="p-6 card md:p-8 animate-slide-up">
-            <div className="flex items-center mb-6 space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
-                <span className="font-bold text-white">III</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
+                  <span className="font-bold text-white">III</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                  TIẾN TRÌNH DẠY HỌC
+                </h2>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                TIẾN TRÌNH DẠY HỌC
-              </h2>
             </div>
 
             <div className="space-y-8">
@@ -435,15 +532,133 @@ const LessonPlanDetail = () => {
                       borderColor: "var(--surface-border)",
                     }}
                   >
-                    <h3 className="flex items-center mb-4 text-xl font-bold" style={{ color: "var(--text-main)" }}>
-                      <span className="mr-2">{displayIcon}</span>
-                      {activityTitle}
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="flex items-center text-xl font-bold" style={{ color: "var(--text-main)" }}>
+                        <span className="mr-2">{displayIcon}</span>
+                        {activityTitle}
+                      </h3>
+                      <IconButton
+                        onClick={() => handleRegenerate(key)}
+                        disabled={regeneratingSection === key}
+                        size="small"
+                        sx={{
+                          color: color,
+                          "&:hover": {
+                            backgroundColor: alpha(color, 0.1),
+                          },
+                        }}
+                        title="Tái tạo hoạt động này"
+                      >
+                        {regeneratingSection === key ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <RefreshIcon />
+                        )}
+                      </IconButton>
+                    </div>
                     <div className="prose max-w-none pl-7">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          table: ({ children }) => (
+                      {(() => {
+                        // Parse markdown to find tables and add regenerate buttons
+                        const lines = activity.content.split("\n");
+                        const tableStartIndex = lines.findIndex(
+                          (line) => line.trim().startsWith("|") && line.includes("Hoạt động của")
+                        );
+
+                        if (tableStartIndex === -1) {
+                          // No table found, render normally
+                          return (
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                table: ({ children }) => (
+                                  <div className="my-4 overflow-x-auto">
+                                    <table
+                                      className="min-w-full border border-collapse shadow-sm"
+                                      style={{
+                                        backgroundColor: "var(--surface)",
+                                        borderColor: "var(--surface-border)",
+                                      }}
+                                    >
+                                      {children}
+                                    </table>
+                                  </div>
+                                ),
+                                thead: ({ children }) => (
+                                  <thead className="bg-gradient-to-r from-blue-600 to-indigo-700">
+                                    {children}
+                                  </thead>
+                                ),
+                                tbody: ({ children }) => <tbody>{children}</tbody>,
+                                tr: ({ children }) => (
+                                  <tr
+                                    className="transition-colors"
+                                    style={{
+                                      backgroundColor: "var(--surface)",
+                                    }}
+                                  >
+                                    {children}
+                                  </tr>
+                                ),
+                                th: ({ children }) => (
+                                  <th
+                                    className="px-4 py-3 text-sm font-bold text-left border border-gray-300"
+                                    style={{
+                                      color: "white",
+                                      backgroundColor: "transparent",
+                                      borderColor: "var(--surface-border)",
+                                    }}
+                                  >
+                                    <span style={{ color: "white" }}>{children}</span>
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td
+                                    className="px-4 py-3 text-sm align-top border"
+                                    style={{
+                                      color: "var(--text-main)",
+                                      borderColor: "var(--surface-border)",
+                                      backgroundColor: "var(--surface)",
+                                    }}
+                                  >
+                                    {children}
+                                  </td>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-bold" style={{ color: "var(--text-main)" }}>
+                                    {children}
+                                  </strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em className="italic" style={{ color: "var(--muted)" }}>
+                                    {children}
+                                  </em>
+                                ),
+                              }}
+                              className="text-gray-700"
+                            >
+                              {activity.content}
+                            </ReactMarkdown>
+                          );
+                        }
+
+                        // Parse table rows
+                        const tableLines: string[] = [];
+                        let i = tableStartIndex;
+                        while (i < lines.length && (lines[i].trim().startsWith("|") || lines[i].trim() === "")) {
+                          if (lines[i].trim().startsWith("|")) {
+                            tableLines.push(lines[i]);
+                          }
+                          i++;
+                        }
+
+                        const beforeTable = lines.slice(0, tableStartIndex).join("\n");
+                        const afterTable = lines.slice(i).join("\n");
+
+                        return (
+                          <>
+                            {beforeTable && (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{beforeTable}</ReactMarkdown>
+                            )}
                             <div className="my-4 overflow-x-auto">
                               <table
                                 className="min-w-full border border-collapse shadow-sm"
@@ -452,69 +667,124 @@ const LessonPlanDetail = () => {
                                   borderColor: "var(--surface-border)",
                                 }}
                               >
-                                {children}
+                                <thead className="bg-gradient-to-r from-blue-600 to-indigo-700">
+                                  <tr>
+                                    {tableLines[0]
+                                      ?.split("|")
+                                      .slice(1, -1)
+                                      .map((cell, idx) => {
+                                        // Remove markdown bold markers (**) from header
+                                        const cleanCell = cell.trim().replace(/\*\*/g, "");
+                                        return (
+                                          <th
+                                            key={idx}
+                                            className="px-4 py-3 text-sm font-bold text-left border border-gray-300"
+                                            style={{
+                                              color: "white",
+                                              backgroundColor: "transparent",
+                                              borderColor: "var(--surface-border)",
+                                            }}
+                                          >
+                                            <span style={{ color: "white" }}>{cleanCell}</span>
+                                          </th>
+                                        );
+                                      })}
+                                    <th
+                                      className="px-2 py-3 text-sm font-bold text-center border border-gray-300"
+                                      style={{
+                                        color: "white",
+                                        backgroundColor: "transparent",
+                                        borderColor: "var(--surface-border)",
+                                        width: "60px",
+                                      }}
+                                    >
+                                      <span style={{ color: "white" }}>Tái tạo</span>
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {tableLines.slice(2).map((row, rowIdx) => {
+                                    const cells = row.split("|").slice(1, -1);
+                                    const isHeaderRow = /^\d+\.\s*HOẠT ĐỘNG/i.test(cells[0]?.trim() || "");
+                                    const isSubItemRow = /^- (Mục tiêu|Cách tiến hành)/i.test(cells[0]?.trim() || "");
+
+                                    return (
+                                      <tr
+                                        key={rowIdx}
+                                        className="transition-colors"
+                                        style={{
+                                          backgroundColor: "var(--surface)",
+                                        }}
+                                      >
+                                        {cells.map((cell, cellIdx) => (
+                                          <td
+                                            key={cellIdx}
+                                            className="px-4 py-3 text-sm align-top border"
+                                            style={{
+                                              color: "var(--text-main)",
+                                              borderColor: "var(--surface-border)",
+                                              backgroundColor: "var(--surface)",
+                                            }}
+                                            colSpan={isHeaderRow || isSubItemRow ? 2 : undefined}
+                                          >
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                              {cell.trim()}
+                                            </ReactMarkdown>
+                                          </td>
+                                        ))}
+                                        {!isHeaderRow && !isSubItemRow && (
+                                          <td
+                                            className="px-2 py-3 text-center align-middle border"
+                                            style={{
+                                              borderColor: "var(--surface-border)",
+                                              backgroundColor: "var(--surface)",
+                                            }}
+                                          >
+                                            <IconButton
+                                              onClick={() => handleRegenerateRow(key, rowIdx)}
+                                              disabled={
+                                                regeneratingRow?.activityKey === key &&
+                                                regeneratingRow?.rowIndex === rowIdx
+                                              }
+                                              size="small"
+                                              sx={{
+                                                color: color,
+                                                "&:hover": {
+                                                  backgroundColor: alpha(color, 0.1),
+                                                },
+                                              }}
+                                              title="Tái tạo hàng này"
+                                            >
+                                              {regeneratingRow?.activityKey === key &&
+                                              regeneratingRow?.rowIndex === rowIdx ? (
+                                                <CircularProgress size={16} />
+                                              ) : (
+                                                <RefreshIcon fontSize="small" />
+                                              )}
+                                            </IconButton>
+                                          </td>
+                                        )}
+                                        {(isHeaderRow || isSubItemRow) && (
+                                          <td
+                                            className="px-2 py-3 text-center align-middle border"
+                                            style={{
+                                              borderColor: "var(--surface-border)",
+                                              backgroundColor: "var(--surface)",
+                                            }}
+                                          />
+                                        )}
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
                               </table>
                             </div>
-                          ),
-                          thead: ({ children }) => (
-                            <thead className="bg-gradient-to-r from-blue-600 to-indigo-700">
-                              {children}
-                            </thead>
-                          ),
-                          tbody: ({ children }) => (
-                            <tbody>
-                              {children}
-                            </tbody>
-                          ),
-                          tr: ({ children }) => (
-                            <tr
-                              className="transition-colors"
-                              style={{
-                                backgroundColor: "var(--surface)",
-                              }}
-                            >
-                              {children}
-                            </tr>
-                          ),
-                          th: ({ children }) => (
-                            <th
-                              className="px-4 py-3 text-sm font-bold text-left border border-gray-300"
-                              style={{
-                                color: "white",
-                                backgroundColor: "transparent",
-                                borderColor: "var(--surface-border)",
-                              }}
-                            >
-                              <span style={{ color: "white" }}>{children}</span>
-                            </th>
-                          ),
-                          td: ({ children }) => (
-                            <td
-                              className="px-4 py-3 text-sm align-top border"
-                              style={{
-                                color: "var(--text-main)",
-                                borderColor: "var(--surface-border)",
-                                backgroundColor: "var(--surface)",
-                              }}
-                            >
-                              {children}
-                            </td>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-bold" style={{ color: "var(--text-main)" }}>
-                              {children}
-                            </strong>
-                          ),
-                          em: ({ children }) => (
-                            <em className="italic" style={{ color: "var(--muted)" }}>
-                              {children}
-                            </em>
-                          ),
-                        }}
-                        className="text-gray-700"
-                      >
-                        {activity.content}
-                      </ReactMarkdown>
+                            {afterTable && (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{afterTable}</ReactMarkdown>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
@@ -523,15 +793,36 @@ const LessonPlanDetail = () => {
           </div>
 
           {/* Adjustment Section - IV. ĐIỀU CHỈNH SAU BÀI DẠY */}
-          <div className="p-6 card md:p-8 animate-slide-up">
-            <div className="flex items-center mb-6 space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600">
-                <span className="font-bold text-white">IV</span>
+          {lessonPlan.content.adjustment && (
+            <div className="p-6 card md:p-8 animate-slide-up">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600">
+                    <span className="font-bold text-white">IV</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                    ĐIỀU CHỈNH SAU BÀI DẠY
+                  </h2>
+                </div>
+                <IconButton
+                  onClick={() => handleRegenerate("adjustment")}
+                  disabled={regeneratingSection === "adjustment"}
+                  size="small"
+                  sx={{
+                    color: theme.palette.grey[600],
+                    "&:hover": {
+                      backgroundColor: alpha(theme.palette.grey[600], 0.1),
+                    },
+                  }}
+                  title="Tái tạo phần này"
+                >
+                  {regeneratingSection === "adjustment" ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <RefreshIcon />
+                  )}
+                </IconButton>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">
-                ĐIỀU CHỈNH SAU BÀI DẠY
-              </h2>
-            </div>
 
             <div className="space-y-6">
               <div
@@ -586,6 +877,7 @@ const LessonPlanDetail = () => {
                 )}
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
