@@ -51,6 +51,8 @@ import {
   ReportProblem,
   Refresh,
   Delete,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
 } from "@mui/icons-material";
 import {
   ResponsiveContainer,
@@ -70,6 +72,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import hanaiLogo from "../../assets/logo/hanai_logo.png";
 import brandNameLogo from "../../assets/logo/brand_name.png";
+import brandNameLogoWhite from "../../assets/logo/hang_brand__white.png";
+import { useThemeMode } from "../../contexts/ThemeModeContext";
 
 const drawerWidth = 220;
 
@@ -82,6 +86,7 @@ interface AdminStats {
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<
@@ -526,7 +531,7 @@ const AdminDashboard = () => {
           </Box>
           <Box sx={{ height: 32, display: "flex", alignItems: "center" }}>
             <img
-              src={brandNameLogo as string}
+              src={(mode === "dark" ? brandNameLogoWhite : brandNameLogo) as string}
               alt="Brand Name"
               style={{ height: "100%", objectFit: "contain", display: "block" }}
             />
@@ -1643,8 +1648,14 @@ const AdminDashboard = () => {
         elevation={4}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          background: "linear-gradient(90deg, #1d4ed8, #3b82f6)",
+          backgroundColor:
+            mode === "dark"
+              ? "rgba(15, 23, 42, 0.95)"
+              : "rgba(255, 255, 255, 0.95)",
           backdropFilter: "blur(12px)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          color: "text.primary",
           borderRadius: 0,
         }}
       >
@@ -1701,6 +1712,15 @@ const AdminDashboard = () => {
             >
               {(user?.name || "A").charAt(0).toUpperCase()}
             </Avatar>
+            <Tooltip title={mode === "dark" ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}>
+              <IconButton
+                color="inherit"
+                size="small"
+                onClick={toggleMode}
+              >
+                {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+              </IconButton>
+            </Tooltip>
             <IconButton
               color="inherit"
               size="small"
@@ -1730,9 +1750,10 @@ const AdminDashboard = () => {
             "& .MuiDrawer-paper": {
               width: drawerWidth,
               boxSizing: "border-box",
-              bgcolor: "#ffffff",
-              color: "#0f172a",
-              borderRight: "1px solid rgba(148,163,184,0.5)",
+              bgcolor: "background.paper",
+              color: "text.primary",
+              borderRight: "1px solid",
+              borderColor: "divider",
             },
           }}
         >
@@ -1745,9 +1766,10 @@ const AdminDashboard = () => {
             "& .MuiDrawer-paper": {
               width: drawerWidth,
               boxSizing: "border-box",
-              bgcolor: "#ffffff",
-              color: "#0f172a",
-              borderRight: "1px solid rgba(148,163,184,0.5)",
+              bgcolor: "background.paper",
+              color: "text.primary",
+              borderRight: "1px solid",
+              borderColor: "divider",
             },
           }}
           open
@@ -1763,7 +1785,7 @@ const AdminDashboard = () => {
           p: 3,
           mt: 8,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "background.default",
           minHeight: "calc(100vh - 64px)", // 64px ~ chiều cao AppBar (mt: 8)
         }}
       >

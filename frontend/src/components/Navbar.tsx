@@ -46,6 +46,7 @@ import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import hanaiLogo from "../assets/logo/hanai_logo.png";
 import brandNameLogo from "../assets/logo/brand_name.png";
+import brandNameLogoWhite from "../assets/logo/hang_brand__white.png";
 import { useThemeMode } from "../contexts/ThemeModeContext";
 
 const Navbar = () => {
@@ -243,7 +244,7 @@ const Navbar = () => {
             }}
           >
             <img
-              src={brandNameLogo as string}
+              src={(mode === "dark" ? brandNameLogoWhite : brandNameLogo) as string}
               alt="Brand Name"
               style={{
                 height: "100%",
